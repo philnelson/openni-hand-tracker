@@ -1,0 +1,208 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		73B1B1FE150292BF00D376EE /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 73B1B1FD150292BF00D376EE /* main.cpp */; };
+		73B1B200150292BF00D376EE /* _D_Hand.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 73B1B1FF150292BF00D376EE /* _D_Hand.1 */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		73B1B1F7150292BF00D376EE /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+				73B1B200150292BF00D376EE /* _D_Hand.1 in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		73B1B1F9150292BF00D376EE /* 3D_Hand */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = 3D_Hand; sourceTree = BUILT_PRODUCTS_DIR; };
+		73B1B1FD150292BF00D376EE /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		73B1B1FF150292BF00D376EE /* _D_Hand.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = _D_Hand.1; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		73B1B1F6150292BF00D376EE /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		73B1B1EE150292BE00D376EE = {
+			isa = PBXGroup;
+			children = (
+				73B1B1FC150292BF00D376EE /* 3D_Hand */,
+				73B1B1FA150292BF00D376EE /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		73B1B1FA150292BF00D376EE /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				73B1B1F9150292BF00D376EE /* 3D_Hand */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		73B1B1FC150292BF00D376EE /* 3D_Hand */ = {
+			isa = PBXGroup;
+			children = (
+				73B1B1FD150292BF00D376EE /* main.cpp */,
+				73B1B1FF150292BF00D376EE /* _D_Hand.1 */,
+			);
+			path = 3D_Hand;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		73B1B1F8150292BF00D376EE /* 3D_Hand */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 73B1B203150292BF00D376EE /* Build configuration list for PBXNativeTarget "3D_Hand" */;
+			buildPhases = (
+				73B1B1F5150292BF00D376EE /* Sources */,
+				73B1B1F6150292BF00D376EE /* Frameworks */,
+				73B1B1F7150292BF00D376EE /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = 3D_Hand;
+			productName = 3D_Hand;
+			productReference = 73B1B1F9150292BF00D376EE /* 3D_Hand */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		73B1B1F0150292BE00D376EE /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0420;
+			};
+			buildConfigurationList = 73B1B1F3150292BE00D376EE /* Build configuration list for PBXProject "3D_Hand" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 73B1B1EE150292BE00D376EE;
+			productRefGroup = 73B1B1FA150292BF00D376EE /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				73B1B1F8150292BF00D376EE /* 3D_Hand */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		73B1B1F5150292BF00D376EE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				73B1B1FE150292BF00D376EE /* main.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		73B1B201150292BF00D376EE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				COPY_PHASE_STRIP = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		73B1B202150292BF00D376EE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_MISSING_PROTOTYPES = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		73B1B204150292BF00D376EE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		73B1B205150292BF00D376EE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		73B1B1F3150292BE00D376EE /* Build configuration list for PBXProject "3D_Hand" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				73B1B201150292BF00D376EE /* Debug */,
+				73B1B202150292BF00D376EE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		73B1B203150292BF00D376EE /* Build configuration list for PBXNativeTarget "3D_Hand" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				73B1B204150292BF00D376EE /* Debug */,
+				73B1B205150292BF00D376EE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 73B1B1F0150292BE00D376EE /* Project object */;
+}
