@@ -1,0 +1,268 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		73E3B59C1568768A00276C9C /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 73E3B59B1568768A00276C9C /* main.cpp */; };
+		73E3B5A71568770F00276C9C /* ShaderLoader.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 73E3B5A51568770F00276C9C /* ShaderLoader.cpp */; };
+		73E3B5AA1568773A00276C9C /* OpenGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 73E3B5A91568773A00276C9C /* OpenGL.framework */; };
+		73E3B5AC1568774000276C9C /* GLUT.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 73E3B5AB1568774000276C9C /* GLUT.framework */; };
+		73E3B5C515687A2C00276C9C /* libnimCodecs.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 73E3B5C215687A2C00276C9C /* libnimCodecs.dylib */; };
+		73E3B5C615687A2C00276C9C /* libnimMockNodes.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 73E3B5C315687A2C00276C9C /* libnimMockNodes.dylib */; };
+		73E3B5C715687A2C00276C9C /* libnimRecorder.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 73E3B5C415687A2C00276C9C /* libnimRecorder.dylib */; };
+		73E3B5CA15687A4100276C9C /* libOpenNI.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 73E3B5C815687A4100276C9C /* libOpenNI.dylib */; };
+		73E3B5CB15687A4100276C9C /* libOpenNI.jni.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 73E3B5C915687A4100276C9C /* libOpenNI.jni.dylib */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		73E3B5951568768A00276C9C /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		73E3B5971568768A00276C9C /* openni-hand-tracker */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = "openni-hand-tracker"; sourceTree = BUILT_PRODUCTS_DIR; };
+		73E3B59B1568768A00276C9C /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		73E3B5A41568770F00276C9C /* SamplesConfig.xml */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.xml; path = SamplesConfig.xml; sourceTree = "<group>"; };
+		73E3B5A51568770F00276C9C /* ShaderLoader.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = ShaderLoader.cpp; sourceTree = "<group>"; };
+		73E3B5A61568770F00276C9C /* ShaderLoader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ShaderLoader.h; sourceTree = "<group>"; };
+		73E3B5A81568772500276C9C /* main.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = main.h; sourceTree = "<group>"; };
+		73E3B5A91568773A00276C9C /* OpenGL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenGL.framework; path = System/Library/Frameworks/OpenGL.framework; sourceTree = SDKROOT; };
+		73E3B5AB1568774000276C9C /* GLUT.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLUT.framework; path = System/Library/Frameworks/GLUT.framework; sourceTree = SDKROOT; };
+		73E3B5C215687A2C00276C9C /* libnimCodecs.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libnimCodecs.dylib; path = /usr/lib/libnimCodecs.dylib; sourceTree = "<absolute>"; };
+		73E3B5C315687A2C00276C9C /* libnimMockNodes.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libnimMockNodes.dylib; path = /usr/lib/libnimMockNodes.dylib; sourceTree = "<absolute>"; };
+		73E3B5C415687A2C00276C9C /* libnimRecorder.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libnimRecorder.dylib; path = /usr/lib/libnimRecorder.dylib; sourceTree = "<absolute>"; };
+		73E3B5C815687A4100276C9C /* libOpenNI.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libOpenNI.dylib; path = /usr/lib/libOpenNI.dylib; sourceTree = "<absolute>"; };
+		73E3B5C915687A4100276C9C /* libOpenNI.jni.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = libOpenNI.jni.dylib; path = /usr/lib/libOpenNI.jni.dylib; sourceTree = "<absolute>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		73E3B5941568768A00276C9C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				73E3B5CA15687A4100276C9C /* libOpenNI.dylib in Frameworks */,
+				73E3B5CB15687A4100276C9C /* libOpenNI.jni.dylib in Frameworks */,
+				73E3B5C515687A2C00276C9C /* libnimCodecs.dylib in Frameworks */,
+				73E3B5C615687A2C00276C9C /* libnimMockNodes.dylib in Frameworks */,
+				73E3B5C715687A2C00276C9C /* libnimRecorder.dylib in Frameworks */,
+				73E3B5AC1568774000276C9C /* GLUT.framework in Frameworks */,
+				73E3B5AA1568773A00276C9C /* OpenGL.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		73E3B58C1568768A00276C9C = {
+			isa = PBXGroup;
+			children = (
+				73E3B5B11568776300276C9C /* Libraries */,
+				73E3B59A1568768A00276C9C /* openni-hand-tracker */,
+				73E3B5981568768A00276C9C /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		73E3B5981568768A00276C9C /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				73E3B5971568768A00276C9C /* openni-hand-tracker */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		73E3B59A1568768A00276C9C /* openni-hand-tracker */ = {
+			isa = PBXGroup;
+			children = (
+				73E3B5A81568772500276C9C /* main.h */,
+				73E3B5A41568770F00276C9C /* SamplesConfig.xml */,
+				73E3B5A51568770F00276C9C /* ShaderLoader.cpp */,
+				73E3B5A61568770F00276C9C /* ShaderLoader.h */,
+				73E3B59B1568768A00276C9C /* main.cpp */,
+			);
+			path = "openni-hand-tracker";
+			sourceTree = "<group>";
+		};
+		73E3B5B11568776300276C9C /* Libraries */ = {
+			isa = PBXGroup;
+			children = (
+				73E3B5C815687A4100276C9C /* libOpenNI.dylib */,
+				73E3B5C915687A4100276C9C /* libOpenNI.jni.dylib */,
+				73E3B5C215687A2C00276C9C /* libnimCodecs.dylib */,
+				73E3B5C315687A2C00276C9C /* libnimMockNodes.dylib */,
+				73E3B5C415687A2C00276C9C /* libnimRecorder.dylib */,
+				73E3B5AB1568774000276C9C /* GLUT.framework */,
+				73E3B5A91568773A00276C9C /* OpenGL.framework */,
+			);
+			name = Libraries;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		73E3B5961568768A00276C9C /* openni-hand-tracker */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 73E3B5A11568768A00276C9C /* Build configuration list for PBXNativeTarget "openni-hand-tracker" */;
+			buildPhases = (
+				73E3B5931568768A00276C9C /* Sources */,
+				73E3B5941568768A00276C9C /* Frameworks */,
+				73E3B5951568768A00276C9C /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "openni-hand-tracker";
+			productName = "openni-hand-tracker";
+			productReference = 73E3B5971568768A00276C9C /* openni-hand-tracker */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		73E3B58E1568768A00276C9C /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0430;
+			};
+			buildConfigurationList = 73E3B5911568768A00276C9C /* Build configuration list for PBXProject "openni-hand-tracker" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 73E3B58C1568768A00276C9C;
+			productRefGroup = 73E3B5981568768A00276C9C /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				73E3B5961568768A00276C9C /* openni-hand-tracker */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		73E3B5931568768A00276C9C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				73E3B59C1568768A00276C9C /* main.cpp in Sources */,
+				73E3B5A71568770F00276C9C /* ShaderLoader.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		73E3B59F1568768A00276C9C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				COPY_PHASE_STRIP = NO;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LIBRARY_SEARCH_PATHS = "/usr/lib/**";
+				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		73E3B5A01568768A00276C9C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				COPY_PHASE_STRIP = YES;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
+				GCC_VERSION = com.apple.compilers.llvm.clang.1_0;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LIBRARY_SEARCH_PATHS = "/usr/lib/**";
+				MACOSX_DEPLOYMENT_TARGET = 10.7;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		73E3B5A21568768A00276C9C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = YES;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				FRAMEWORK_SEARCH_PATHS = /usr/lib/;
+				HEADER_SEARCH_PATHS = "/usr/include/ni/**";
+				LIBRARY_SEARCH_PATHS = (
+					/usr/lib/,
+					/opt/local/lib,
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		73E3B5A31568768A00276C9C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = YES;
+				ARCHS = "$(ARCHS_STANDARD_64_BIT)";
+				FRAMEWORK_SEARCH_PATHS = /usr/lib/;
+				HEADER_SEARCH_PATHS = "/usr/include/ni/**";
+				LIBRARY_SEARCH_PATHS = (
+					/usr/lib/,
+					/opt/local/lib,
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		73E3B5911568768A00276C9C /* Build configuration list for PBXProject "openni-hand-tracker" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				73E3B59F1568768A00276C9C /* Debug */,
+				73E3B5A01568768A00276C9C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		73E3B5A11568768A00276C9C /* Build configuration list for PBXNativeTarget "openni-hand-tracker" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				73E3B5A21568768A00276C9C /* Debug */,
+				73E3B5A31568768A00276C9C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 73E3B58E1568768A00276C9C /* Project object */;
+}
