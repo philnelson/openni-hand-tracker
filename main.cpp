@@ -124,17 +124,21 @@ void draw2(){
     {
         for(int incY=1;incY<=DIMX;incY++,acc++)
         {
-            texArranged[( (incX-1) *DIMX)+incY]=texMap[acc];
+            float tmp=texMap[acc];
+            texArranged[( (incX-1) *DIMX)+incY ]=tmp;
+            //std::cout << acc <<std::endl;
         }
-        
+        //std::cout << "->" <<std::endl;
     }
     
+    /*
     std::cout<<"arr UP: "<<texArranged[DIMX/2] << std::endl;
     std::cout<<"arr DW: "<<texArranged[DIMX*(DIMY-1)+DIMX/2] << std::endl;
     
     
     std::cout<<"tex UP: "<< texMap[DIMX*(DIMY-1)+DIMX/2]<< std::endl;
     std::cout<<"tex DW: "<< texMap[DIMX/2] << std::endl;
+    */
     
     //-------TEST
     
@@ -181,7 +185,7 @@ void draw3()
 	XnStatus rc = XN_STATUS_OK;
 	rc = g_context.WaitAnyUpdateAll();
     
-    
+    /*
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
@@ -193,7 +197,7 @@ void draw3()
     glTranslatef(0.0, 0.0, -(MAX_DEPTH/2000));
     DrawAxes(2.0);
     glPopMatrix();
-    
+    */
 	if (rc != XN_STATUS_OK) {
 		glutSwapBuffers();
 		return;
@@ -201,11 +205,13 @@ void draw3()
     
 	g_depth.GetMetaData(g_depthMD);
 	
-	const XnDepthPixel* pDepth = g_depthMD.Data();
+	 
+    const XnDepthPixel* pDepth = g_depthMD.Data();
     
+    /*
     glEnable(GL_POINT_SMOOTH);
     glBegin(GL_POINTS);
-    
+    */
     
     XnDouble d;
     XnDouble color;
@@ -219,16 +225,17 @@ void draw3()
     for (XnUInt y = 0; y < g_depthMD.YRes(); y++)
 	{
         
-		for (XnUInt x = 0; x < g_depthMD.XRes(); x++, pDepth++)
+		for (XnUInt x = 0; x < g_depthMD.XRes(); x++, pDepth++,knct++)
 		{
             
             // Take the distance data for the actual pixel
             d = *pDepth;
             
-            knct++;
-            if(d != 0 && d<800 || 1) 
+            kinectMap[knct]=0;
+            if(d != 0 && d<800) 
             {
-                //kinectMap[knct]=d;
+                kinectMap[knct]=1;
+                /*
                 color = (1.0-(1.0/d));
                 
                 xc = (((float)x - cx_d)*(d/1000))/(fx_d);
@@ -238,16 +245,17 @@ void draw3()
                 glVertex3f(xc, yc, zc-(MAX_DEPTH*0.8/2000));
                 
                 kinectCNT++;
-                
+                */
                 
             }
+                        
         }
         
         
     }
     
-    glReadPixels(0, 0, DIMX, DIMY, GL_RGB, GL_FLOAT, kinectMap); 
-
+    //glReadPixels(0, 0, DIMX, DIMY, GL_RGB, GL_FLOAT, kinectMap); 
+    
     /*
     std::cout<<"k CENTRO ALTO  : "<<pDepth[DIMX/2] << std::endl;
     std::cout<<"k CENTRO BASS0 : "<<pDepth[DIMX*(DIMY-1)+DIMX/2] << std::endl;
@@ -255,7 +263,45 @@ void draw3()
     
     int errfun=0;
     
-            
+    for(int i=0;i<DIMX*DIMY;i++)
+    {
+        if(kinectMap[i]!=0 && texArranged[i]!=0) errfun++;
+    }
+          
+    std::cout<< "ERR: "<<errfun<<std::endl;
+    
+    
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glMatrixMode(GL_MODELVIEW);
+	glLoadIdentity();
+	
+    
+    glOrtho(0.0, 5, 0.0, 5, -1.0, 1.0);
+    
+    glBindTexture (GL_TEXTURE_2D, 13);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0); 
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);    
+    
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, DIMX, DIMY, 0, GL_DEPTH_COMPONENT, GL_FLOAT, (GLvoid*)kinectMap);
+    
+    glColor4f(1, 1, 1,1);
+    glEnable(GL_TEXTURE_2D);
+    
+    glBindTexture (GL_TEXTURE_2D, 13);
+    glBegin (GL_QUADS);
+    glTexCoord2f (0.0, 0.0);
+    glVertex2f (0.0, 0.0);
+    glTexCoord2f (1, 0.0);
+    glVertex2f (5.0, 0.0);
+    glTexCoord2f (1.f, 1.f);
+    glVertex2f (5.0, 5.0);
+    glTexCoord2f (0.0, 1);
+    glVertex2f (0.0, 5.0);
+    glEnd ();    
+    glDisable(GL_TEXTURE_2D);
+    
     
     glEnd();
     glutSwapBuffers();
@@ -338,7 +384,7 @@ int main(int argc, char** argv) {
     
     srand ((unsigned int)time(NULL));
     
-    //kinect_fn(0);
+    kinect_fn(0);
     
     
     if(PSO)
@@ -404,7 +450,7 @@ int main(int argc, char** argv) {
     
     window3 = glutCreateWindow("Kinect View");
     glutPositionWindow(50,580);
-    glutReshapeFunc(reshapeKinect);
+    //glutReshapeFunc(reshapeKinect);
     glutDisplayFunc(draw3);  
     glutIdleFunc(idle);
     initGL(640, 480);

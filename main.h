@@ -74,7 +74,7 @@ float absf(float num);
 float* texMap= new float[DIMX*DIMY]; //memorizzo la depth map della mano generato con le openGL
 float* kinectMap= new float[DIMX*DIMY]; //memorizzo la depth map della mano generato con le openGL
 float* tmpMap= new float[DIMX*DIMY];
-float* texArranged= new float[DIMX*DIMY];
+float* texArranged= new float[DIMX*DIMY*2];
 
 unsigned int texMapX = 0;
 unsigned int texMapY = 0;
