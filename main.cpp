@@ -3,6 +3,9 @@
 
 using namespace xn;
 
+int kinectCNT;
+int shaderCNT;
+
 //NOTA: TUTTE LE DICHIARAZIONI SONO NEL .h
 
 #pragma MARK WINDOW 1
@@ -64,9 +67,10 @@ void draw() {
     {
 
       glReadPixels(0, 0, DIMX, DIMY, GL_DEPTH_COMPONENT, GL_FLOAT, texMap); 
-        
 
     }
+    
+    //std::cout << "SHADER: "<<shaderCNT<< "       KINECT: "<<kinectCNT<<"        DIFF: "<<shaderCNT-kinectCNT <<std::endl;
     
     glFlush();
     glutSwapBuffers();
@@ -74,7 +78,7 @@ void draw() {
 }
 
 #pragma MARK WINDOW 2
-
+//DISEGNO LA SECONDA FINESTRA (QUELLA DELLO SHADER)
 void draw2(){
     
     
@@ -91,13 +95,50 @@ void draw2(){
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_BASE_LEVEL, 0); 
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LEVEL, 0);       
     
+    shaderCNT=0;
+    
     for(int i=0;i<DIMX*DIMY;i++)
     {
-        if(texMap[i]==1)texMap[i]=0;
+        if(texMap[i]==1)
+        {
+         texMap[i]=0;
+        }
+        else
+        {
+            shaderCNT++;
+        }
         texMap[i]=texMap[i];
     }
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, DIMX, DIMY, 0, GL_DEPTH_COMPONENT, GL_FLOAT, (GLvoid*)texMap);
+    
+    /*
+    std::cout<<"CENTRO ALTO  : "<<texMap[DIMX*(DIMY-1)+DIMX/2] << std::endl;
+    std::cout<<"CENTRO BASS0 : "<<texMap[DIMX/2] << std::endl;
+    */
+    
+    //-------TEST     
+    
+    
+    int acc=0;
+    
+    for(int incX=DIMY;incX>0;incX--)
+    {
+        for(int incY=1;incY<=DIMX;incY++,acc++)
+        {
+            texArranged[( (incX-1) *DIMX)+incY]=texMap[acc];
+        }
+        
+    }
+    
+    std::cout<<"arr UP: "<<texArranged[DIMX/2] << std::endl;
+    std::cout<<"arr DW: "<<texArranged[DIMX*(DIMY-1)+DIMX/2] << std::endl;
+    
+    
+    std::cout<<"tex UP: "<< texMap[DIMX*(DIMY-1)+DIMX/2]<< std::endl;
+    std::cout<<"tex DW: "<< texMap[DIMX/2] << std::endl;
+    
+    //-------TEST
+    
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, DIMX, DIMY, 0, GL_DEPTH_COMPONENT, GL_FLOAT, (GLvoid*)texArranged);
     
     glColor4f(1, 1, 1,1);
     glEnable(GL_TEXTURE_2D);
@@ -115,6 +156,8 @@ void draw2(){
     glEnd ();    
     glDisable(GL_TEXTURE_2D);
     
+    
+    //PUNTO ROSSO DI COORDINATE (WIDTH/2,0)
     glPointSize(2.f);    
     glBegin(GL_POINTS);
     glColor3f(1.f, 0.f, 0.f);    
@@ -122,13 +165,17 @@ void draw2(){
     glVertex3f(2.5f,0.f,0.f);    
     glEnd();
     
+
+    
+    
+    
     glFlush();
     glutSwapBuffers();
     glutPostRedisplay();
 }
 
 #pragma MARK WINDOW 3
-
+//DISEGNO LA TERZA FINESTRA (QUELLA DEL KINECT)
 void draw3()
 {
 	XnStatus rc = XN_STATUS_OK;
@@ -167,6 +214,7 @@ void draw3()
     XnDouble zc;    
     
     int knct=0;
+    kinectCNT=0;
     
     for (XnUInt y = 0; y < g_depthMD.YRes(); y++)
 	{
@@ -176,10 +224,11 @@ void draw3()
             
             // Take the distance data for the actual pixel
             d = *pDepth;
-            kinectMap[knct]=d;
+            
             knct++;
-            if(d != 0 && d<800)
+            if(d != 0 && d<800 || 1) 
             {
+                //kinectMap[knct]=d;
                 color = (1.0-(1.0/d));
                 
                 xc = (((float)x - cx_d)*(d/1000))/(fx_d);
@@ -188,7 +237,7 @@ void draw3()
                 glColor3f(color, color, color);
                 glVertex3f(xc, yc, zc-(MAX_DEPTH*0.8/2000));
                 
-                
+                kinectCNT++;
                 
                 
             }
@@ -197,10 +246,23 @@ void draw3()
         
     }
     
+    glReadPixels(0, 0, DIMX, DIMY, GL_RGB, GL_FLOAT, kinectMap); 
+
+    /*
+    std::cout<<"k CENTRO ALTO  : "<<pDepth[DIMX/2] << std::endl;
+    std::cout<<"k CENTRO BASS0 : "<<pDepth[DIMX*(DIMY-1)+DIMX/2] << std::endl;
+    */
+    
+    int errfun=0;
+    
+            
+    
     glEnd();
     glutSwapBuffers();
     glutPostRedisplay();
     
+    
+    /*
     int tmpMapcnt=0;
     
     for(int i=DIMY-1;i>=0;i--)
@@ -211,7 +273,7 @@ void draw3()
             tmpMapcnt++;
         }
     }
-    
+    */
     /*
     PixelErrorSum=0;
     for( int i=0;i<DIMX*DIMY;i++)
@@ -276,7 +338,7 @@ int main(int argc, char** argv) {
     
     srand ((unsigned int)time(NULL));
     
-    kinect_fn(0);
+    //kinect_fn(0);
     
     
     if(PSO)

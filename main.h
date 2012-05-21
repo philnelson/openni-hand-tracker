@@ -57,7 +57,7 @@ float absf(float num);
 #define VMAX 0.2f
 #define LIMIT 90
 
-#define PSO 1
+#define PSO 0
 #define SECONDARYWIN 1
 
 #define DIMX 640
@@ -74,6 +74,7 @@ float absf(float num);
 float* texMap= new float[DIMX*DIMY]; //memorizzo la depth map della mano generato con le openGL
 float* kinectMap= new float[DIMX*DIMY]; //memorizzo la depth map della mano generato con le openGL
 float* tmpMap= new float[DIMX*DIMY];
+float* texArranged= new float[DIMX*DIMY];
 
 unsigned int texMapX = 0;
 unsigned int texMapY = 0;
