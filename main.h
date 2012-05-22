@@ -9,7 +9,7 @@
 #ifndef _D_Hand_main_h
 #define _D_Hand_main_h
 
-#endif
+
 
 #include <XnOS.h>
 #include <XnCppWrapper.h>
@@ -20,7 +20,8 @@
 #include <iostream>
 #include <fstream>
 #include <ctime>
-#include "ShaderLoader.cpp"
+#include "ShaderLoader.h"
+#include "Hand.h"
 
 using namespace xn;
 
@@ -133,3 +134,8 @@ float compute_error(particle *theparticle);
 float spin_x,spin_y,old_x,old_y,oold_x,oold_y=0;
 int window2 = 0;
 int window3 = 0;
+
+Hand* mano;
+bool PSO_ACTIVE=0;
+
+#endif

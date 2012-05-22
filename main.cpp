@@ -40,6 +40,7 @@ void draw() {
 
     DrawAxes(10);
     
+    //SHADER PER RENDERIZZARE LA MANO COME SE FOSSE UNA DEPTHMAP-------------------------------------------------------
     {
     const GLchar *vertex_shader[] = {
         "void main(void) {\n",
@@ -54,23 +55,22 @@ void draw() {
         "   gl_FragColor = vec4(f, f, f, 1.0);\n",
         "}"
     };
-    
+    //FINE SHADER ------------------------------------------------------------------------------------------------------
     static shader_prog prog(vertex_shader, color_shader);
     //prog(); 
     }
     
     glPushMatrix();
     glScalef(0.15, 0.15, 0.15);
-    fullhand(0,0,0,bestparticle.x,bestparticle.y,bestparticle.z);
+
+    mano->draw();
+    mano->randomUpdate(0); // randomUpdate(0) means rand() works with integers
+    
     glPopMatrix();
     
-    {
-
-      glReadPixels(0, 0, DIMX, DIMY, GL_DEPTH_COMPONENT, GL_FLOAT, texMap); 
-
-    }
-    
-    //std::cout << "SHADER: "<<shaderCNT<< "       KINECT: "<<kinectCNT<<"        DIFF: "<<shaderCNT-kinectCNT <<std::endl;
+    //LEGGO I VALORI DEI PIXEL NEL FRAMEBUFFER E LI SALVO NELLA VARIABILE <texMap>
+    glReadPixels(0, 0, DIMX, DIMY, GL_DEPTH_COMPONENT, GL_FLOAT, texMap); 
+    //FINE -----------------------------------------------------------------------
     
     glFlush();
     glutSwapBuffers();
@@ -110,14 +110,9 @@ void draw2(){
         texMap[i]=texMap[i];
     }
     
-    /*
-    std::cout<<"CENTRO ALTO  : "<<texMap[DIMX*(DIMY-1)+DIMX/2] << std::endl;
-    std::cout<<"CENTRO BASS0 : "<<texMap[DIMX/2] << std::endl;
-    */
+
     
-    //-------TEST     
-    
-    
+    //RE-ARRANGEMENT DELLO SHAPE DELLA MATRICE DI TEXEL
     int acc=0;
     
     for(int incX=DIMY;incX>0;incX--)
@@ -126,11 +121,12 @@ void draw2(){
         {
             float tmp=texMap[acc];
             texArranged[( (incX-1) *DIMX)+incY ]=tmp;
-            //std::cout << acc <<std::endl;
+    
         }
-        //std::cout << "->" <<std::endl;
+    
     }
     
+    //-------TEST
     /*
     std::cout<<"arr UP: "<<texArranged[DIMX/2] << std::endl;
     std::cout<<"arr DW: "<<texArranged[DIMX*(DIMY-1)+DIMX/2] << std::endl;
@@ -182,9 +178,12 @@ void draw2(){
 //DISEGNO LA TERZA FINESTRA (QUELLA DEL KINECT)
 void draw3()
 {
+    //PULIZIA FRAMEBUFFER; ALTRIMNENTI MI RITROVO ROBA CHE C'ERA IN MEMORIA VIDEO
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    
 	XnStatus rc = XN_STATUS_OK;
 	rc = g_context.WaitAnyUpdateAll();
-    
+    {
     /*
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glMatrixMode(GL_MODELVIEW);
@@ -198,6 +197,7 @@ void draw3()
     DrawAxes(2.0);
     glPopMatrix();
     */
+    }
 	if (rc != XN_STATUS_OK) {
 		glutSwapBuffers();
 		return;
@@ -207,18 +207,18 @@ void draw3()
 	
 	 
     const XnDepthPixel* pDepth = g_depthMD.Data();
-    
+    XnDouble d;
+    {
     /*
     glEnable(GL_POINT_SMOOTH);
     glBegin(GL_POINTS);
     */
-    
-    XnDouble d;
-    XnDouble color;
-    XnDouble xc;
-    XnDouble yc;
-    XnDouble zc;    
-    
+   
+//    XnDouble color;
+//    XnDouble xc;
+//    XnDouble yc;
+//    XnDouble zc;    
+    }
     int knct=0;
     kinectCNT=0;
     
@@ -232,9 +232,11 @@ void draw3()
             d = *pDepth;
             
             kinectMap[knct]=0;
+            
             if(d != 0 && d<800) 
             {
                 kinectMap[knct]=1;
+                {
                 /*
                 color = (1.0-(1.0/d));
                 
@@ -246,6 +248,7 @@ void draw3()
                 
                 kinectCNT++;
                 */
+                }
                 
             }
                         
@@ -253,14 +256,14 @@ void draw3()
         
         
     }
-    
+    {
     //glReadPixels(0, 0, DIMX, DIMY, GL_RGB, GL_FLOAT, kinectMap); 
     
     /*
     std::cout<<"k CENTRO ALTO  : "<<pDepth[DIMX/2] << std::endl;
     std::cout<<"k CENTRO BASS0 : "<<pDepth[DIMX*(DIMY-1)+DIMX/2] << std::endl;
     */
-    
+    }
     int errfun=0;
     
     for(int i=0;i<DIMX*DIMY;i++)
@@ -268,7 +271,7 @@ void draw3()
         if(kinectMap[i]!=0 && texArranged[i]!=0) errfun++;
     }
           
-    std::cout<< "ERR: "<<errfun<<std::endl;
+    std::cout<< "ERR: "<<(DIMX*DIMY)-errfun<<std::endl;
     
     
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -303,11 +306,11 @@ void draw3()
     glDisable(GL_TEXTURE_2D);
     
     
-    glEnd();
+    glFlush();
     glutSwapBuffers();
     glutPostRedisplay();
     
-    
+    {
     /*
     int tmpMapcnt=0;
     
@@ -328,7 +331,7 @@ void draw3()
     }
     */
     //std::cout<<"CNT: "<<PixelErrorSum<<std::endl;
-    
+    }
     
     //PSO
     
@@ -362,17 +365,19 @@ void draw3()
     
 }
 
-void reshapeKinect(int width, int height) 
-{
-	GLfloat fieldOfView = 45.0f;
-	glViewport (0, 0, (GLsizei) width, (GLsizei) height);	
-	glMatrixMode (GL_PROJECTION);
-	glLoadIdentity();
-	gluPerspective(fieldOfView, (GLfloat) width/(GLfloat) height, 0.1, 500.0);
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-    
-}
+//KINECT RESHAPE, NOT USED ANYMORE
+
+//void reshapeKinect(int width, int height) 
+//{
+//	GLfloat fieldOfView = 45.0f;
+//	glViewport (0, 0, (GLsizei) width, (GLsizei) height);	
+//	glMatrixMode (GL_PROJECTION);
+//	glLoadIdentity();
+//	gluPerspective(fieldOfView, (GLfloat) width/(GLfloat) height, 0.1, 500.0);
+//	glMatrixMode(GL_MODELVIEW);
+//	glLoadIdentity();
+//    
+//}
 
 
 
@@ -382,9 +387,46 @@ void reshapeKinect(int width, int height)
 
 int main(int argc, char** argv) {
     
+    //INIZIALIZZO UN SEED PER I NUMERI CASUALI
     srand ((unsigned int)time(NULL));
     
-    kinect_fn(0);
+    //COSTRUTTORE PER LA MANO
+    handState initStato;
+    //Setto i parametri di initStato tra le {...}
+    {
+    initStato.angolo1_indice=40;
+    initStato.angolo2_indice=40;
+    initStato.angolo3_indice=20;
+    
+    initStato.angolo1_medio=40;
+    initStato.angolo2_medio=40;
+    initStato.angolo3_medio=20;
+    
+    initStato.angolo1_anulare=0;
+    initStato.angolo2_anulare=20;
+    initStato.angolo3_anulare=20;
+    
+    initStato.angolo1_mignolo=0;
+    initStato.angolo2_mignolo=20;
+    initStato.angolo3_mignolo=20;
+    
+    initStato.angolo1_pollice=-30;
+    initStato.angolo2_pollice=40;
+    initStato.angolo3_pollice=40;
+        
+    initStato.rotX=-90;
+    initStato.rotY=0;
+    initStato.rotZ=180;        
+
+    initStato.posX=0;
+    initStato.posY=0;
+    initStato.posZ=0;
+        
+    }
+    mano = new Hand(initStato);
+    
+    //SPENGO O ACCENDO IL KINECT
+    //kinect_fn(0);
     
     
     if(PSO)
@@ -476,6 +518,7 @@ int main(int argc, char** argv) {
 
 
 #pragma MARK PSO
+
 void particleinit()
 {
     for(int i=0;i<PARTICLENUM;i++)
@@ -622,241 +665,7 @@ float compute_error(particle *theparticle)
     
 }
 
-#pragma MARK HAND
-
-void fullhand(float posx, float posy, float posz, float ax, float ay, float az)
-{
-    glPushMatrix();
-    
-        glTranslatef(posx, posy, posx);
-        glRotatef(ax, 1, 0, 0);
-        glRotatef(ay, 0, 1, 0);
-        glRotatef(az, 0, 0, 1);    
-
-    
-        glPushMatrix();
-        glScalef(1.0,1.0,0.6);
-        finger(-1,0,-0.1,0.8f,0.2f,0,20,20);
-        glPopMatrix();
-        
-        glPushMatrix();
-        glScalef(1.0,1.0,0.9);
-        finger(-0.5,0,0.1,0.8f,0.2f,0,20,20);
-        glPopMatrix();
-        
-        glPushMatrix();
-        glScalef(1.0,1.0,0.8);
-        finger(0,0,0.1,0.8f,0.2f,0,20,20);
-        glPopMatrix();
-        
-        glPushMatrix();
-        glScalef(1.0,1.0,0.7);
-        finger(0.5,0,-0.1,0.8f,0.2f,0,20,20);
-        glPopMatrix();
-        
-        pollice(0.35, -0.5, -0.3,0.4f,0.2f,-30,40,40);
-        hand(-0.25,0,-1.3);
-    
-    glPopMatrix();
-}
-
-void hand(float offsetx,float offsety,float offsetz)
-{
-    
-    float lunghezza_palmo=1.0f;
-    float larghezza_palmo=1.0f;
-    float altezza_palmo=0.3f;   
-    
-    glPushMatrix();
-    
-        glTranslatef(offsetx, offsety, offsetz);
-    
-        glPushMatrix();
-        glColor3f(1, 1, 0);
-        GLUquadric* quad=  gluNewQuadric(); 
-        glScalef(larghezza_palmo, altezza_palmo, 1.0f);
-        gluCylinder(quad, 1, 1.0f, lunghezza_palmo, 20, 20);
-        glPopMatrix();
-        
-        glPushMatrix();
-        glColor3f(1, 0, 0);
-        glScalef(larghezza_palmo, altezza_palmo, 0.3f);    
-        glutSolidSphere(1, 20, 20);
-        glPopMatrix();
-        
-        glPushMatrix();
-        glColor3f(1, 0, 0);
-        glTranslatef(0,0,lunghezza_palmo);
-        glScalef(larghezza_palmo, altezza_palmo, 0.3f);    
-        glutSolidSphere(1, 20, 20);
-        glPopMatrix();
-    
-    glPopMatrix();
-
-}
-
-void finger(float offsetx,float offsety, float offsetz,float lunghezza_f,float articolazione,int angolo1,int angolo2,int angolo3)
-{
-    float ratio=0.6f;
-    
-    //PRIMA ARTICOLAZIONE INDICE
-    glPushMatrix();
-    glColor3f(0, 1, 0);
-    glTranslatef(offsetx, 0, offsetz);
-    glutSolidSphere(articolazione,10,10);
-    glPopMatrix();
-    
-    glPushMatrix();
-    glTranslatef(0, 0, offsetz);
-    glRotatef(angolo1, 1, 0, 0);
-    glTranslatef(0, 0, -offsetz);
-    
-        //PRIMA FALANGE INDICE
-        glPushMatrix();
-            glColor3f(0, 0, 1);
-            glTranslatef(offsetx, 0, offsetz);
-            GLUquadric* ffi=  gluNewQuadric(); 
-            gluCylinder(ffi, articolazione, articolazione, lunghezza_f, 20, 20);
-        glPopMatrix();    
-        
-        //SECONDA ARTICOLAZIONE INDICE
-        glPushMatrix();
-            glColor3f(0, 1, 0);
-            glTranslatef(offsetx, 0, offsetz+lunghezza_f);
-            glutSolidSphere(articolazione,10,10);
-        glPopMatrix();
-    
-
-        //SECONDA FALANGE INDICE
-        glPushMatrix();
-            glColor3f(0, 0, 1);
-            glTranslatef(offsetx, 0, offsetz+lunghezza_f);
-            glRotatef(angolo2, 1, 0, 0);
-            GLUquadric* sfi=  gluNewQuadric(); 
-            gluCylinder(sfi, articolazione, articolazione, lunghezza_f, 20, 20);
-        glPopMatrix();
-        
-        glPushMatrix();
-            glTranslatef(0,0,lunghezza_f+offsetz);
-            glRotatef(angolo2, 1, 0, 0);
-            glTranslatef(0,0,-lunghezza_f-offsetz);
-        
-            //TERZA ARTICOLAZIONE INDICE
-            glPushMatrix();
-                glColor3f(0, 1, 0);
-                glTranslatef(offsetx, 0, offsetz+lunghezza_f+lunghezza_f);
-                glutSolidSphere(articolazione,10,10);
-            glPopMatrix();
-            
-            //TERZA FALANGE INDICE
-            glPushMatrix();
-                glColor3f(0, 0, 1);
-                glTranslatef(offsetx, 0, offsetz+lunghezza_f+lunghezza_f);
-                glRotatef(angolo3, 1, 0, 0);
-                GLUquadric* tfi=  gluNewQuadric(); 
-                gluCylinder(tfi, articolazione, articolazione, lunghezza_f*ratio, 20, 20);
-            glPopMatrix();
-                
-            glPushMatrix();
-            glTranslatef(0,0,lunghezza_f+lunghezza_f+offsetz);
-            glRotatef(angolo3, 1, 0, 0);
-            glTranslatef(0,0,-lunghezza_f-lunghezza_f-offsetz);
-        
-                //TAPPO INDICE
-                glPushMatrix();
-                    glColor3f(0, 1, 0);
-                    glTranslatef(offsetx, 0, offsetz+lunghezza_f+lunghezza_f+lunghezza_f*ratio);
-                    glutSolidSphere(articolazione,10,10);
-                glPopMatrix();
-            glPopMatrix();
-    
-        glPopMatrix();
-    
-    glPopMatrix();
-}
-
-void pollice(float offsetx,float offsety, float offsetz,float lunghezza_f,float articolazione,int angolo1,int angolo2,int angolo3)
-{
-    glPushMatrix();
-    glColor3f(1, 0, 0);
-    glTranslatef(0.5, -0.4, -0.8);
-    glRotatef(30, 0, 1, 0);
-    glScalef(0.4, 0.4, 0.6);
-    glutSolidSphere(1, 10, 10);
-    glPopMatrix();
-    
-    
-    pollice_dito(offsetx, offsety, offsetz,lunghezza_f,articolazione,angolo1,angolo2,angolo3);
-}
-
-
-void pollice_dito(float offsetx,float offsety, float offsetz,float lunghezza_f,float articolazione,int angolo1,int angolo2,int angolo3)
-{
-    //PRIMA ARTICOLAZIONE INDICE
-    glPushMatrix();
-
-        glTranslatef(offsetx, offsety, offsetz);
-        glRotatef(-90, 0, 0, 1);
-        glTranslatef(-offsetx, -offsety, -offsetz);
-        
-        
-        //PRIMA ARTICOLAZIONE INDICE
-        glPushMatrix();
-            glColor3f(0, 1, 0);
-            glTranslatef(offsetx, 0, offsetz);
-            glutSolidSphere(articolazione,10,10);
-        glPopMatrix();
-        
-        glPushMatrix();
-            glTranslatef(0, 0, offsetz);
-            glRotatef(angolo1, 1, 0, 0);
-            glTranslatef(0, 0, -offsetz);
-            
-            //PRIMA FALANGE INDICE
-            glPushMatrix();
-                glColor3f(0, 0, 1);
-                glTranslatef(offsetx, 0, offsetz);
-                GLUquadric* ffi=  gluNewQuadric(); 
-                gluCylinder(ffi, articolazione, articolazione, lunghezza_f, 20, 20);
-            glPopMatrix();    
-            
-            //SECONDA ARTICOLAZIONE INDICE
-            glPushMatrix();
-                glColor3f(0, 1, 0);
-                glTranslatef(offsetx, 0, offsetz+lunghezza_f);
-                glutSolidSphere(articolazione,10,10);
-            glPopMatrix();
-            
-            
-            //SECONDA FALANGE INDICE
-            glPushMatrix();
-                glColor3f(0, 0, 1);
-                glTranslatef(offsetx, 0, offsetz+lunghezza_f);
-                glRotatef(angolo2, 1, 0, 0);
-                GLUquadric* sfi=  gluNewQuadric(); 
-                gluCylinder(sfi, articolazione, articolazione, lunghezza_f, 20, 20);
-            glPopMatrix();
-            
-            glPushMatrix();
-                glTranslatef(0,0,lunghezza_f+offsetz);
-                glRotatef(angolo2, 1, 0, 0);
-                glTranslatef(0,0,-lunghezza_f-offsetz);
-                
-                //TERZA ARTICOLAZIONE INDICE
-                glPushMatrix();
-                    glColor3f(0, 1, 0);
-                    glTranslatef(offsetx, 0, offsetz+lunghezza_f+lunghezza_f);
-                    glutSolidSphere(articolazione,10,10);
-                glPopMatrix();
-            
-            
-        glPopMatrix();
-    
-    glPopMatrix();
-
-    
-    glPopMatrix();
-}
+#pragma MARK HAND -> moved Hand.h/Hand.cpp
 
 #pragma MARK USER INTERACTION FUNCTIONS
 
@@ -872,6 +681,20 @@ void menu(int op) {
 void keyboardDown(unsigned char key, int x, int y) {
     
     switch(key) {
+        case 'p':
+        {
+            if(!PSO_ACTIVE)
+            {
+                PSO_ACTIVE=0;
+                std::cout<<"PSO engaded..."<<std::endl;
+            }
+            else if(PSO_ACTIVE)
+            {
+                PSO_ACTIVE=1;
+                std::cout<<"PSO disengaded..."<<std::endl;
+            }
+            break;
+        }
         case 'Q':
         case 'q':
         case  27:   // ESC
@@ -915,6 +738,7 @@ void mouseMotion(int x, int y)
     glutPostRedisplay();
     
 }
+
 
 #pragma MARK OPENGL STUFF
 
