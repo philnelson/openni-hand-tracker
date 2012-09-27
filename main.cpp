@@ -12,10 +12,7 @@
 #include <openni/XnLog.h>
 
 #include <opencv2/opencv.hpp>
-
-// Header for NITE
 #include <nite/XnVNite.h>
-// local header
 #include "PointDrawer.h"
 
 #define CHECK_RC(rc, what)											\
@@ -171,6 +168,7 @@ void glutKeyboard (unsigned char key, int x, int y)
     case 27:
         // Exit
         CleanupExit();
+        break;
     case'p':
         // Toggle pause
         g_bPause = !g_bPause;
@@ -233,7 +231,7 @@ void XN_CALLBACK_TYPE GestureProgressHandler(xn::GestureGenerator& generator, co
 
 
 // xml to initialize OpenNI
-#define SAMPLE_XML_PATH "/home/jacopo/workspace/opencv_fingertip_detector/Sample-Tracking.xml"
+#define SAMPLE_XML_PATH "Sample-Tracking.xml"
 
 int main(int argc, char ** argv)
 {
@@ -351,7 +349,7 @@ int main(int argc, char ** argv)
             vector<vector<Point> >	hullsP (contours.size() );
             vector<vector<Vec4i> > 	defects (contours.size() );
 
-            for( int i = 0; i < contours.size(); i++ )
+            for( int i = 0; i < (int)contours.size(); i++ )
             {
                 convexHull(contours[i], hullsI[i], false, false);
                 convexHull(contours[i], hullsP[i], false, true);
@@ -370,10 +368,10 @@ int main(int argc, char ** argv)
             biggest[2] = initVec;
             biggest[3] = initVec;
             //std::cout << "{";
-            for( int i = 0; i < defects.size(); i++)
+            for( int i = 0; i < (int)defects.size(); i++)
             {
                 //std::cout << "[";
-                for(int j = 0; j < defects[i].size(); j++)
+                for(int j = 0; j < (int)defects[i].size(); j++)
                 {
                     //std::cout << "(" << defects[i][j][0] << " " << defects[i][j][1] << " " << defects[i][j][2] << " " << defects[i][j][3] << " " << std::endl;
                     Vec4i defect(defects[i][j]);
@@ -395,7 +393,7 @@ int main(int argc, char ** argv)
             }
             //std::cout << "}" << std::endl;
 
-            for( int i = 0; i < contours.size(); i++ )
+            for( int i = 0; i < (int)contours.size(); i++ )
             {
                 drawContours( drawing, contours, i, Scalar( 0, 255, 0 ), 1, 8, vector<Vec4i>(), 0, Point() );
                 //drawContours( drawing, hullsP, i, Scalar( 255, 0, 0 ), 1, 8, vector<Vec4i>(), 0, Point() );
