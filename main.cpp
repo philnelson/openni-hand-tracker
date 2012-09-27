@@ -409,7 +409,10 @@ int main(int argc, char ** argv)
 
 				for(int j=0;j<640;j++,++pDepthIterator)
 				{
+
 					depth=*pDepthIterator;
+					if(depth!=0)
+					{
 					ppX = (j - cx_d)*depth/fx_d;
 					ppY = (i - cy_d)*depth/fy_d;
 					ppZ = depth;
@@ -423,8 +426,12 @@ int main(int argc, char ** argv)
 
 					if(P2D_rgbY<480 && P2D_rgbX<640 && P2D_rgbY!=0 && P2D_rgbX!=0 && P2D_rgbY>0 && P2D_rgbX>0)
 					{
+						//nerd way
+						//reprojected.ptr<uchar>(P2D_rgbY)[P2D_rgbX]=255;
+						//easy way
+						reprojected.at<uchar>(P2D_rgbY,P2D_rgbX)=255;
+					}
 
-						reprojected.ptr<uchar>(P2D_rgbY)[P2D_rgbX]=255;
 					}
 				}
 			}
