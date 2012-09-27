@@ -19,5 +19,11 @@
 		</Node>
 		<Node type="Gesture" />
 		<Node type="Hands" />
+		<Node type="Image">
+		<Configuration>
+				<Mirror on="true"/>
+			</Configuration>
+		</Node>
 	</ProductionNodes>
+	
 </OpenNI>
