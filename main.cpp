@@ -14,6 +14,35 @@
 #include <nite/XnVNite.h>
 #include "PointDrawer.h"
 
+#define fx_rgb 5.2921508098293293e+02
+#define fy_rgb 5.2556393630057437e+02
+#define cx_rgb 3.2894272028759258e+02
+#define cy_rgb 2.6748068171871557e+02
+#define k1_rgb 2.6451622333009589e-01
+#define k2_rgb -8.3990749424620825e-01
+#define p1_rgb -1.9922302173693159e-03
+#define p2_rgb 1.4371995932897616e-03
+#define k3_rgb 9.1192465078713847e-01
+
+#define fx_d 5.9421434211923247e+02
+#define fy_d 5.9104053696870778e+02
+#define cx_d 3.3930780975300314e+02
+#define cy_d 2.4273913761751615e+02
+#define k1_d -2.6386489753128833e-01
+#define k2_d 9.9966832163729757e-01
+#define p1_d -7.6275862143610667e-04
+#define p2_d 5.0350940090814270e-03
+#define k3_d -1.3053628089976321e+00
+
+
+double T[]={0.019985242312092553, -0.00074423738761617583,-0.010916736334336222};
+double R[]={0.9998462882657779,0.0012635359098409581,-0.017487233004436643,
+		-0.0014779096108364480,0.99992385683542895,-0.012251380107679535,
+		0.017470421412464927,0.012275341476520762,0.99977202419716948};
+
+
+
+
 #define CHECK_RC(rc, what)											\
 		if (rc != XN_STATUS_OK)											\
 		{																\
@@ -66,6 +95,29 @@ XnBool g_bPause = false;
 XnBool g_bQuit = false;
 
 SessionState g_SessionState = NOT_IN_SESSION;
+
+
+double vectors_dot_prod(const double *x, const double *y, int n)
+{
+	double res = 0.0;
+	int i;
+	for (i = 0; i < n; i++)
+	{
+		res += x[i] * y[i];
+	}
+	return res;
+}
+
+void matrix_vector_mult(const double **mat, const double *vec, double *result, int rows, int cols)
+{ // in matrix form: result = mat * vec;
+	int i;
+	for (i = 0; i < rows; i++)
+	{
+		result[i] = vectors_dot_prod(mat[i], vec, cols);
+	}
+}
+
+
 
 void CleanupExit()
 {
@@ -306,6 +358,10 @@ int main(int argc, char ** argv)
 		// Update NITE tree
 		g_pSessionManager->Update(&g_Context);
 
+		cv::Mat reprojected=cv::Mat::ones(480,640,CV_8UC1);
+		////////////////////////////////////////
+		//IF I FOUND THE HAND
+		////////////////////////////////////////
 		if(g_pDrawer->handFound)
 		{
 			XnRGB24Pixel* pRGB = imageMD.WritableRGB24Data();
@@ -326,36 +382,91 @@ int main(int argc, char ** argv)
 
 				}
 			}
+
+
+
+
+			//REPROJECTION
+
+			XnDepthPixel* pDepthIterator = depthMD.WritableData();
+
+			int depth;
+			int ppX;
+			int ppY;
+			int ppZ;
+
+			int ppXp;
+			int ppYp;
+			int ppZp;
+
+			int P2D_rgbX;
+			int P2D_rgbY;
+
+
+			for(int i=0;i<480;i++)
+			{
+
+
+				for(int j=0;j<640;j++,++pDepthIterator)
+				{
+					depth=*pDepthIterator;
+					ppX = (j - cx_d)*depth/fx_d;
+					ppY = (i - cy_d)*depth/fy_d;
+					ppZ = depth;
+
+					ppXp = (ppX*R[0]+ppY*R[1]+ppZ*R[2]) + T[0];
+					ppYp = (ppX*R[3]+ppY*R[4]+ppZ*R[5]) + T[1];
+					ppZp = (ppX*R[6]+ppY*R[7]+ppZ*R[8]) + T[2];
+
+					P2D_rgbX = (ppXp * fx_rgb / ppZp) + cx_rgb;
+					P2D_rgbY = (ppYp * fy_rgb / ppZp) + cy_rgb;
+
+					if(P2D_rgbY<480 && P2D_rgbX<640 && P2D_rgbY!=0 && P2D_rgbX!=0 && P2D_rgbY>0 && P2D_rgbX>0)
+					{
+
+						reprojected.ptr<uchar>(P2D_rgbY)[P2D_rgbX]=255;
+					}
+				}
+			}
 		}
+
+
+		////////////////////////////////////////
+		////////////////////////////////////////
 
 		//for opencv Mat
 		cv::Mat depth16(480,640,CV_16SC1,(unsigned short*)depthMD.WritableData());
 
 		cv::Mat colorArr[3];
 		cv::Mat colorImage;
+
+
+
+
 		const XnRGB24Pixel* pImageRow;
-	    const XnRGB24Pixel* pPixel;
-	    pImageRow = imageMD.RGB24Data();
+		const XnRGB24Pixel* pPixel;
+		pImageRow = imageMD.RGB24Data();
 
-	    colorArr[0] = cv::Mat(imageMD.YRes(),imageMD.XRes(),CV_8U);
-	    colorArr[1] = cv::Mat(imageMD.YRes(),imageMD.XRes(),CV_8U);
-	    colorArr[2] = cv::Mat(imageMD.YRes(),imageMD.XRes(),CV_8U);
 
-	    for (int y=0; y<imageMD.YRes(); y++)
-	           {
-	                  pPixel = pImageRow;
-	                  uchar* Bptr = colorArr[0].ptr<uchar>(y);
-	                  uchar* Gptr = colorArr[1].ptr<uchar>(y);
-	                  uchar* Rptr = colorArr[2].ptr<uchar>(y);
-	                  for(int x=0;x<imageMD.XRes();++x , ++pPixel)
-	                  {
-	                            Bptr[x] = pPixel->nBlue;
-	                            Gptr[x] = pPixel->nGreen;
-	                            Rptr[x] = pPixel->nRed;
-	                  }
-	                  pImageRow += imageMD.XRes();
-	            }
-	            cv::merge(colorArr,3,colorImage);
+		colorArr[0] = cv::Mat(imageMD.YRes(),imageMD.XRes(),CV_8U);
+		colorArr[1] = cv::Mat(imageMD.YRes(),imageMD.XRes(),CV_8U);
+		colorArr[2] = cv::Mat(imageMD.YRes(),imageMD.XRes(),CV_8U);
+
+		for (int y=0; y<imageMD.YRes(); y++)
+		{
+			pPixel = pImageRow;
+			uchar* Bptr = colorArr[0].ptr<uchar>(y);
+			uchar* Gptr = colorArr[1].ptr<uchar>(y);
+			uchar* Rptr = colorArr[2].ptr<uchar>(y);
+			for(int x=0;x<imageMD.XRes();++x , ++pPixel)
+			{
+				Bptr[x] = pPixel->nBlue;
+				Gptr[x] = pPixel->nGreen;
+				Rptr[x] = pPixel->nRed;
+			}
+			pImageRow += imageMD.XRes();
+		}
+		cv::merge(colorArr,3,colorImage);
 
 
 
@@ -440,11 +551,13 @@ int main(int argc, char ** argv)
 			/// Show in a window
 			namedWindow( "Hull demo", CV_WINDOW_AUTOSIZE );
 			imshow( "Hull demo", drawing );
+			cv::imshow("Repro", reprojected);
 
 		}
 
 		cv::imshow("RGB", colorImage);
-		cv::imshow("PrimeSense Nite Point Viewer", depth16);
+		cv::imshow("Depth", depthshow);
+
 
 		key_pre = cv::waitKey(33);
 
