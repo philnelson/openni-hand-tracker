@@ -1,19 +1,32 @@
-/*******************************************************************************
- *                                                                              *
- *   PrimeSense NITE 1.3 - Point Viewer Sample                                  *
- *   Copyright (C) 2010 PrimeSense Ltd.                                         *
- *                                                                              *
- *******************************************************************************/
 
-// Headers for OpenNI
+//*************************************************************************************
+//INCLUDES
+//*************************************************************************************
 #include <openni/XnOpenNI.h>
 #include <openni/XnCppWrapper.h>
 #include <openni/XnHash.h>
 #include <openni/XnLog.h>
 #include <opencv2/opencv.hpp>
 #include <nite/XnVNite.h>
+#include <Eigen/Core>
 #include "PointDrawer.h"
+#include <GL/glut.h>
+#include "signal_catch.h"
+//*************************************************************************************
 
+
+//*************************************************************************************
+//Defines di sistema
+//*************************************************************************************
+#define SAMPLE_XML_PATH "Sample-Tracking.xml"
+//*************************************************************************************
+//*************************************************************************************
+
+
+
+//*************************************************************************************
+//Parametri intrinseci del kinect
+//*************************************************************************************
 #define fx_rgb 5.2921508098293293e+02
 #define fy_rgb 5.2556393630057437e+02
 #define cx_rgb 3.2894272028759258e+02
@@ -34,15 +47,20 @@
 #define p2_d 5.0350940090814270e-03
 #define k3_d -1.3053628089976321e+00
 
+//Eigen::MatrixXd R(9.9984628826577793e-01, 1.2635359098409581e-03,-1.7487233004436643e-02, -1.4779096108364480e-03,9.9992385683542895e-01, -1.2251380107679535e-02,1.7470421412464927e-02, 1.2275341476520762e-02,9.9977202419716948e-01);
+//Eigen::Vector3d T(0.019985242312092553,-0.00074423738761617583,-0.010916736334336222);
 
 double T[]={0.019985242312092553, -0.00074423738761617583,-0.010916736334336222};
 double R[]={0.9998462882657779,0.0012635359098409581,-0.017487233004436643,
 		-0.0014779096108364480,0.99992385683542895,-0.012251380107679535,
 		0.017470421412464927,0.012275341476520762,0.99977202419716948};
+//*************************************************************************************
+//*************************************************************************************
 
 
-
-
+//*************************************************************************************
+//Verifica degli errori dello status del kinect
+//*************************************************************************************
 #define CHECK_RC(rc, what)											\
 		if (rc != XN_STATUS_OK)											\
 		{																\
@@ -58,13 +76,20 @@ double R[]={0.9998462882657779,0.0012635359098409581,-0.017487233004436643,
 			printf("%s\n", strError);			\
 			return (rc);						\
 		}
+//*************************************************************************************
+//*************************************************************************************
 
 
-#include <GL/glut.h>
-
-#include "signal_catch.h"
-
+//*************************************************************************************
+//Namespaces
+//*************************************************************************************
 using namespace cv;
+//*************************************************************************************
+
+
+//*************************************************************************************
+//Definizione variabili Globali e Define vari
+//*************************************************************************************
 
 // OpenNI objects
 xn::Context g_Context;
@@ -93,31 +118,15 @@ XnBool g_bPrintFrameID = false;
 XnFloat g_fSmoothing = 0.0f;
 XnBool g_bPause = false;
 XnBool g_bQuit = false;
-
 SessionState g_SessionState = NOT_IN_SESSION;
 
-
-double vectors_dot_prod(const double *x, const double *y, int n)
-{
-	double res = 0.0;
-	int i;
-	for (i = 0; i < n; i++)
-	{
-		res += x[i] * y[i];
-	}
-	return res;
-}
-
-void matrix_vector_mult(const double **mat, const double *vec, double *result, int rows, int cols)
-{ // in matrix form: result = mat * vec;
-	int i;
-	for (i = 0; i < rows; i++)
-	{
-		result[i] = vectors_dot_prod(mat[i], vec, cols);
-	}
-}
+//*************************************************************************************
+//*************************************************************************************
 
 
+//*************************************************************************************
+//Exit routine
+//*************************************************************************************
 
 void CleanupExit()
 {
@@ -129,24 +138,47 @@ void CleanupExit()
 
 	exit (1);
 }
+//*************************************************************************************
+//*************************************************************************************
 
+
+//*************************************************************************************
 // Callback for when the focus is in progress
+//*************************************************************************************
 void XN_CALLBACK_TYPE FocusProgress(const XnChar* strFocus, const XnPoint3D& ptPosition, XnFloat fProgress, void* UserCxt)
 {
 	//	printf("Focus progress: %s @(%f,%f,%f): %f\n", strFocus, ptPosition.X, ptPosition.Y, ptPosition.Z, fProgress);
 }
+//*************************************************************************************
+//*************************************************************************************
+
+
+//*************************************************************************************
 // callback for session start
+//*************************************************************************************
 void XN_CALLBACK_TYPE SessionStarting(const XnPoint3D& ptPosition, void* UserCxt)
 {
 	printf("Session start: (%f,%f,%f)\n", ptPosition.X, ptPosition.Y, ptPosition.Z);
 	g_SessionState = IN_SESSION;
 }
+//*************************************************************************************
+//*************************************************************************************
+
+
+//*************************************************************************************
 // Callback for session end
+//*************************************************************************************
 void XN_CALLBACK_TYPE SessionEnding(void* UserCxt)
 {
 	printf("Session end\n");
 	g_SessionState = NOT_IN_SESSION;
 }
+//*************************************************************************************
+//*************************************************************************************
+
+//*************************************************************************************
+//Callback for hand loss
+//*************************************************************************************
 void XN_CALLBACK_TYPE NoHands(void* UserCxt)
 {
 	if (g_SessionState != NOT_IN_SESSION)
@@ -155,11 +187,23 @@ void XN_CALLBACK_TYPE NoHands(void* UserCxt)
 		g_SessionState = QUICK_REFOCUS;
 	}
 }
+//*************************************************************************************
+//*************************************************************************************
 
+
+//*************************************************************************************
+//Touching Callback
+//*************************************************************************************
 void XN_CALLBACK_TYPE TouchingCallback(xn::HandTouchingFOVEdgeCapability& generator, XnUserID id, const XnPoint3D* pPosition, XnFloat fTime, XnDirection eDir, void* pCookie)
 {
 	g_pDrawer->SetTouchingFOVEdge(id);
 }
+//*************************************************************************************
+//*************************************************************************************
+
+//*************************************************************************************
+//Gesture Callback
+//*************************************************************************************
 /*
 void XN_CALLBACK_TYPE MyGestureInProgress(xn::GestureGenerator& generator, const XnChar* strGesture, const XnPoint3D* pPosition, void* pCookie)
 {
@@ -170,8 +214,32 @@ void XN_CALLBACK_TYPE MyGestureReady(xn::GestureGenerator& generator, const XnCh
     printf("Gesture %s ready for next stage\n", strGesture);
 }
  */
+//*************************************************************************************
+//*************************************************************************************
 
-// this function is called each frame
+//*************************************************************************************
+//Gestures callbacks (hints about wave gesture status)
+//*************************************************************************************
+void XN_CALLBACK_TYPE GestureIntermediateStageCompletedHandler(xn::GestureGenerator& generator, const XnChar* strGesture, const XnPoint3D* pPosition, void* pCookie)
+{
+	printf("Gesture %s: Intermediate stage complete (%f,%f,%f)\n", strGesture, pPosition->X, pPosition->Y, pPosition->Z);
+}
+void XN_CALLBACK_TYPE GestureReadyForNextIntermediateStageHandler(xn::GestureGenerator& generator, const XnChar* strGesture, const XnPoint3D* pPosition, void* pCookie)
+{
+	printf("Gesture %s: Ready for next intermediate stage (%f,%f,%f)\n", strGesture, pPosition->X, pPosition->Y, pPosition->Z);
+}
+void XN_CALLBACK_TYPE GestureProgressHandler(xn::GestureGenerator& generator, const XnChar* strGesture, const XnPoint3D* pPosition, XnFloat fProgress, void* pCookie)
+{
+	printf("Gesture %s progress: %f (%f,%f,%f)\n", strGesture, fProgress, pPosition->X, pPosition->Y, pPosition->Z);
+}
+//*************************************************************************************
+//*************************************************************************************
+
+
+//*************************************************************************************
+//glutDisplay: called each frame
+//*************************************************************************************
+
 void glutDisplay (void)
 {
 
@@ -204,6 +272,9 @@ void glutDisplay (void)
 
 }
 
+//*************************************************************************************
+//IDLE FUNC
+//*************************************************************************************
 void glutIdle (void)
 {
 	if (g_bQuit) {
@@ -213,7 +284,13 @@ void glutIdle (void)
 	// Display the frame
 	glutPostRedisplay();
 }
+//*************************************************************************************
+//*************************************************************************************
 
+
+//*************************************************************************************
+//User input
+//*************************************************************************************
 void glutKeyboard (unsigned char key, int x, int y)
 {
 	switch (key)
@@ -249,6 +326,12 @@ void glutKeyboard (unsigned char key, int x, int y)
 		break;
 	}
 }
+//*************************************************************************************
+//*************************************************************************************
+
+//*************************************************************************************
+//GL init parameters
+//*************************************************************************************
 void glInit (int * pargc, char ** argv)
 {
 	glutInit(pargc, argv);
@@ -268,24 +351,13 @@ void glInit (int * pargc, char ** argv)
 	glEnableClientState(GL_VERTEX_ARRAY);
 	glDisableClientState(GL_COLOR_ARRAY);
 }
-
-void XN_CALLBACK_TYPE GestureIntermediateStageCompletedHandler(xn::GestureGenerator& generator, const XnChar* strGesture, const XnPoint3D* pPosition, void* pCookie)
-{
-	printf("Gesture %s: Intermediate stage complete (%f,%f,%f)\n", strGesture, pPosition->X, pPosition->Y, pPosition->Z);
-}
-void XN_CALLBACK_TYPE GestureReadyForNextIntermediateStageHandler(xn::GestureGenerator& generator, const XnChar* strGesture, const XnPoint3D* pPosition, void* pCookie)
-{
-	printf("Gesture %s: Ready for next intermediate stage (%f,%f,%f)\n", strGesture, pPosition->X, pPosition->Y, pPosition->Z);
-}
-void XN_CALLBACK_TYPE GestureProgressHandler(xn::GestureGenerator& generator, const XnChar* strGesture, const XnPoint3D* pPosition, XnFloat fProgress, void* pCookie)
-{
-	printf("Gesture %s progress: %f (%f,%f,%f)\n", strGesture, fProgress, pPosition->X, pPosition->Y, pPosition->Z);
-}
+//*************************************************************************************
+//*************************************************************************************
 
 
-// xml to initialize OpenNI
-#define SAMPLE_XML_PATH "Sample-Tracking.xml"
-
+//*************************************************************************************
+//MAIN FUNC
+//*************************************************************************************
 int main(int argc, char ** argv)
 {
 	XnStatus rc = XN_STATUS_OK;
@@ -358,7 +430,7 @@ int main(int argc, char ** argv)
 		// Update NITE tree
 		g_pSessionManager->Update(&g_Context);
 
-		cv::Mat reprojected=cv::Mat::ones(480,640,CV_8UC1);
+		cv::Mat reprojected=cv::Mat::zeros(480,640,CV_8UC3);
 		////////////////////////////////////////
 		//IF I FOUND THE HAND
 		////////////////////////////////////////
@@ -374,9 +446,9 @@ int main(int argc, char ** argv)
 					if (*pDepth>g_pDrawer->pt3D.Z+50 || *pDepth<g_pDrawer->pt3D.Z-50)
 					{
 						*pDepth=0;
-						pRGB->nBlue=0;
-						pRGB->nRed=255;
-						pRGB->nGreen=0;
+						//pRGB->nBlue=0;
+						//pRGB->nRed=255;
+						//pRGB->nGreen=0;
 
 					}
 
@@ -399,41 +471,60 @@ int main(int argc, char ** argv)
 			int ppYp;
 			int ppZp;
 
+			Eigen::Vector3d p;
+			Eigen::Vector3d pprimo;
+
 			int P2D_rgbX;
 			int P2D_rgbY;
+
+			const XnRGB24Pixel* pImageRow;
+			const XnRGB24Pixel* pPixel;
+			pImageRow = imageMD.RGB24Data();
 
 
 			for(int i=0;i<480;i++)
 			{
+				pPixel = pImageRow;
 
-
-				for(int j=0;j<640;j++,++pDepthIterator)
+				for(int j=0;j<640;j++,++pDepthIterator,++pPixel)
 				{
 
 					depth=*pDepthIterator;
-					if(depth!=0)
+					if(depth!=0 || 1)
 					{
-					ppX = (j - cx_d)*depth/fx_d;
-					ppY = (i - cy_d)*depth/fy_d;
-					ppZ = depth;
+						ppX = (j - cx_d)*depth/fx_d;	//x
+						ppY = (i - cy_d)*depth/fy_d;	//y
+						ppZ = depth; 					//z
 
-					ppXp = (ppX*R[0]+ppY*R[1]+ppZ*R[2]) + T[0];
-					ppYp = (ppX*R[3]+ppY*R[4]+ppZ*R[5]) + T[1];
-					ppZp = (ppX*R[6]+ppY*R[7]+ppZ*R[8]) + T[2];
+						//pprimo=R.dot(p):
 
-					P2D_rgbX = (ppXp * fx_rgb / ppZp) + cx_rgb;
-					P2D_rgbY = (ppYp * fy_rgb / ppZp) + cy_rgb;
+						ppXp = (ppX*R[0]+ppY*R[1]+ppZ*R[2]) + T[0];
+						ppYp = (ppX*R[3]+ppY*R[4]+ppZ*R[5]) + T[1];
+						ppZp = (ppX*R[6]+ppY*R[7]+ppZ*R[8]) + T[2];
 
-					if(P2D_rgbY<480 && P2D_rgbX<640 && P2D_rgbY!=0 && P2D_rgbX!=0 && P2D_rgbY>0 && P2D_rgbX>0)
-					{
-						//nerd way
-						//reprojected.ptr<uchar>(P2D_rgbY)[P2D_rgbX]=255;
-						//easy way
-						reprojected.at<uchar>(P2D_rgbY,P2D_rgbX)=255;
+						P2D_rgbX = (ppXp * fx_rgb / ppZp) + cx_rgb;
+						P2D_rgbY = (ppYp * fy_rgb / ppZp) + cy_rgb;
+
+						//if(P2D_rgbY<480 && P2D_rgbX<640 && P2D_rgbY!=0 && P2D_rgbX!=0 && P2D_rgbY>0 && P2D_rgbX>0)
+						if(ppYp<480 && ppXp<640 && ppYp!=0 && ppXp!=0 && ppYp>0 && ppXp>0)
+						{
+							//nerd way
+							//reprojected.ptr<uchar>(P2D_rgbY)[P2D_rgbX]=255;
+							//easy way
+							//reprojected.at<uchar>(P2D_rgbY,P2D_rgbX)=255;
+							//Vec3b v = reprojected.at<uchar>(P2D_rgbY,P2D_rgbX);
+
+							Point3_<uchar>* p = reprojected.ptr<Point3_<uchar> >(ppYp,ppXp);
+							p->x=depth;
+							p->y=depth;
+							p->z=depth;
+						}
+
 					}
 
-					}
+
 				}
+				pImageRow +=640;
 			}
 		}
 
@@ -441,8 +532,11 @@ int main(int argc, char ** argv)
 		////////////////////////////////////////
 		////////////////////////////////////////
 
-		//for opencv Mat
+		//COLORED IMAGE BGR
+
+
 		cv::Mat depth16(480,640,CV_16SC1,(unsigned short*)depthMD.WritableData());
+
 
 		cv::Mat colorArr[3];
 		cv::Mat colorImage;
@@ -562,6 +656,7 @@ int main(int argc, char ** argv)
 
 		}
 
+		//Immagine non reproiettata
 		cv::imshow("RGB", colorImage);
 		cv::imshow("Depth", depthshow);
 
