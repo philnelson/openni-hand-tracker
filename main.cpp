@@ -354,20 +354,238 @@ void glInit (int * pargc, char ** argv)
 //*************************************************************************************
 //*************************************************************************************
 
+void RGBkinect2OpenCV(cv::Mat colorImage)
+{
+	//Puntatore alla riga di pixel
+	const XnRGB24Pixel* pImageRow;
+	//Puntatore al pixel
+	const XnRGB24Pixel* pPixel;
+	//Matrice dei punti RGB
+	cv::Mat colorArr[3];
+
+	pImageRow = imageMD.RGB24Data();
+
+
+	colorArr[0] = cv::Mat(imageMD.YRes(),imageMD.XRes(),CV_8U);
+	colorArr[1] = cv::Mat(imageMD.YRes(),imageMD.XRes(),CV_8U);
+	colorArr[2] = cv::Mat(imageMD.YRes(),imageMD.XRes(),CV_8U);
+
+	for (int y=0; y<imageMD.YRes(); y++)
+	{
+		pPixel = pImageRow;
+		uchar* Bptr = colorArr[0].ptr<uchar>(y);
+		uchar* Gptr = colorArr[1].ptr<uchar>(y);
+		uchar* Rptr = colorArr[2].ptr<uchar>(y);
+		for(int x=0;x<imageMD.XRes();++x , ++pPixel)
+		{
+			Bptr[x] = pPixel->nBlue;
+			Gptr[x] = pPixel->nGreen;
+			Rptr[x] = pPixel->nRed;
+		}
+		pImageRow += imageMD.XRes();
+	}
+	cv::merge(colorArr,3,colorImage);
+}
+
+void hand_found(cv::Mat depthshow,XnDepthPixel* pDepth)
+{
+	XnRGB24Pixel* pRGB = imageMD.WritableRGB24Data();
+	//Matrice dei punti di depth riproiettati
+	cv::Mat reprojected=cv::Mat::zeros(480,640,CV_8UC3);
+
+	//Ciclo ogni elemento del depth buffer in modo da eliminare (porre a zero più precisamente)
+	//tutti i punti che si trovando al di fuori di un offset dalla Z del punto in cui è stata
+	//individuata la mano
+
+	for (XnUInt y = 0; y < depthMD.YRes(); ++y)
+	{
+		for (XnUInt x = 0; x < depthMD.XRes(); ++x, ++pDepth,++pRGB)
+		{
+
+			if (*pDepth>g_pDrawer->pt3D.Z+50 || *pDepth<g_pDrawer->pt3D.Z-50)
+			{
+				*pDepth=0;
+
+			}
+
+		}
+	}
+
+//	//REPROJECTION
+//	XnDepthPixel* pDepthIterator = depthMD.WritableData();
+//	int depth;
+//	int ppX;
+//	int ppY;
+//	int ppZ;
+//
+//	int ppXp;
+//	int ppYp;
+//	int ppZp;
+//
+//	Eigen::Vector3d p;
+//	Eigen::Vector3d pprimo;
+//
+//	int P2D_rgbX;
+//	int P2D_rgbY;
+//
+//	const XnRGB24Pixel* pImageRow;
+//	const XnRGB24Pixel* pPixel;
+//	pImageRow = imageMD.RGB24Data();
+//
+//
+//	for(int i=0;i<480;i++)
+//	{
+//		pPixel = pImageRow;
+//
+//		for(int j=0;j<640;j++,++pDepthIterator,++pPixel)
+//		{
+//
+//			depth=*pDepthIterator;
+//			if(depth!=0 || 1)
+//			{
+//				ppX = (j - cx_d)*depth/fx_d;	//x
+//				ppY = (i - cy_d)*depth/fy_d;	//y
+//				ppZ = depth; 					//z
+//
+//				//pprimo=R.dot(p):
+//
+//				ppXp = (ppX*R[0]+ppY*R[1]+ppZ*R[2]) + T[0];
+//				ppYp = (ppX*R[3]+ppY*R[4]+ppZ*R[5]) + T[1];
+//				ppZp = (ppX*R[6]+ppY*R[7]+ppZ*R[8]) + T[2];
+//
+//				P2D_rgbX = (ppXp * fx_rgb / ppZp) + cx_rgb;
+//				P2D_rgbY = (ppYp * fy_rgb / ppZp) + cy_rgb;
+//
+//				//if(P2D_rgbY<480 && P2D_rgbX<640 && P2D_rgbY!=0 && P2D_rgbX!=0 && P2D_rgbY>0 && P2D_rgbX>0)
+//				if(ppYp<480 && ppXp<640 && ppYp!=0 && ppXp!=0 && ppYp>0 && ppXp>0)
+//				{
+//					//nerd way
+//					//reprojected.ptr<uchar>(P2D_rgbY)[P2D_rgbX]=255;
+//					//easy way
+//					//reprojected.at<uchar>(P2D_rgbY,P2D_rgbX)=255;
+//					//Vec3b v = reprojected.at<uchar>(P2D_rgbY,P2D_rgbX);
+//
+//					Point3_<uchar>* p = reprojected.ptr<Point3_<uchar> >(ppYp,ppXp);
+//					p->x=depth;
+//					p->y=depth;
+//					p->z=depth;
+//				}
+//
+//			}
+//
+//
+//		}
+//		pImageRow +=640;
+//	}
+
+
+	//Istanzio il punto2D nella finestra in cui ho individuato la mano
+	cv::Point handPos(g_pDrawer->ptProjective.X, g_pDrawer->ptProjective.Y);
+	//Disegno il cerchio nel punto in cui ho individuato la mano
+	cv::circle(depthshow, handPos, 5, cv::Scalar(0xffff), 5, 8, 0);
+
+
+	Mat src_gray;
+	//Fattore di soglia
+	int thresh = 10;
+	//Colore random
+	RNG rng(12345);
+	//Effettuo una sfocatura dell'immagine di depth per diminuire il rumore
+	blur( depthshow, src_gray, Size(6,6) );
+	//Destinazione dell'operatore di soglia
+	Mat threshold_output;
+	//Contorni
+	vector<vector<Point> > contours;
+	//Gerarchia dei contorni
+	vector<Vec4i> hierarchy;
+	//Effettuo la soglia
+	threshold( src_gray, threshold_output, thresh, 255, THRESH_BINARY );
+	//Trovo i contorni
+	findContours( threshold_output, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
+
+	//Oggetti in cui salvare l'hull
+	vector<vector<int> > hullsI (contours.size()); 		//di int
+	vector<vector<Point> >	hullsP (contours.size() );	//di Point
+	vector<vector<Vec4i> > 	defects (contours.size() );	//Defezioni (punti in cui mi aspetto di trovare le dita)
+
+	//per ogni contorno rilevato, esamino il guscio (l'hull)
+	//e cerco i difetti di convessità
+	for( int i = 0; i < (int)contours.size(); i++ )
+	{
+		convexHull(contours[i], hullsI[i], false, false);
+		convexHull(contours[i], hullsP[i], false, true);
+		if (contours[i].size() >3 )
+		{
+			convexityDefects(contours[i], hullsI[i], defects[i]);
+		}
+	}
+
+	//Matrice di destinazione
+	Mat drawing = Mat::zeros( threshold_output.size(), CV_8UC3 );
+	//vettore di quattro elementi di tipi Vec4i
+	vector <Vec4i> biggest	(4);
+	Vec4i initVec(0, 0, 0, 0);
+	biggest[0] = initVec;
+	biggest[1] = initVec;
+	biggest[2] = initVec;
+	biggest[3] = initVec;
+	//std::cout << "{";
+	for( int i = 0; i < (int)defects.size(); i++)
+	{
+		//std::cout << "[";
+		for(int j = 0; j < (int)defects[i].size(); j++)
+		{
+			//std::cout << "(" << defects[i][j][0] << " " << defects[i][j][1] << " " << defects[i][j][2] << " " << defects[i][j][3] << " " << std::endl;
+			Vec4i defect(defects[i][j]);
+			Point start(contours[i][defect[0]]);
+			Point end(contours[i][defect[1]]);
+			Point far(contours[i][defect[2]]);
+			int tmp = defect[3]; //distanza minima necessaria per rimuovere punti troppo vicini
+			if(tmp > 1700)
+			{
+				line(drawing, start, handPos, Scalar( 255, 255, 0 ), 1);
+				line(drawing, far, handPos, Scalar( 255, 255, 0 ), 1);
+				line(drawing, far, start, Scalar( 255, 0, 255 ), 1);
+				circle(drawing, far, 2, Scalar( 0, 0, 255 ), 5, 8, 0);		//difetto
+				circle(drawing, start, 2, Scalar( 0, 255, 255 ), 5, 8, 0);	//fingertip
+				//circle(drawing, end, 2, Scalar( 0, 0, 255 ), 5, 8, 0);	//inutile
+			}
+		}
+		//std::cout << "]" << std::endl;
+	}
+	//std::cout << "}" << std::endl;
+
+	for( int i = 0; i < (int)contours.size(); i++ )
+	{
+		drawContours( drawing, contours, i, Scalar( 0, 255, 0 ), 1, 8, vector<Vec4i>(), 0, Point() );
+		//drawContours( drawing, hullsP, i, Scalar( 255, 0, 0 ), 1, 8, vector<Vec4i>(), 0, Point() );
+	}
+
+	/// Show in a window
+	namedWindow( "Processing", CV_WINDOW_AUTOSIZE );
+	imshow( "Processing", drawing );
+	//imshow("Repro", reprojected);
+
+
+}
 
 //*************************************************************************************
 //MAIN FUNC
 //*************************************************************************************
 int main(int argc, char ** argv)
 {
+	//Variabile di stato per il kinect
 	XnStatus rc = XN_STATUS_OK;
+	//Enumeratore per gli errori
 	xn::EnumerationErrors errors;
 
-	// Initialize OpenNI
+	// Inizializzazione OPENNI
 	rc = g_Context.InitFromXmlFile(SAMPLE_XML_PATH, g_ScriptNode, &errors);
 	CHECK_ERRORS(rc, errors, "InitFromXmlFile");
 	CHECK_RC(rc, "InitFromXmlFile");
+	//=============================================================================
 
+	//Cerco i nodi definiti nell'xml (fondamentali detph e image)
 	rc = g_Context.FindExistingNode(XN_NODE_TYPE_IMAGE, g_ImageGenerator);
 	CHECK_RC(rc, "Find image generator");
 	rc = g_Context.FindExistingNode(XN_NODE_TYPE_DEPTH, g_DepthGenerator);
@@ -376,7 +594,9 @@ int main(int argc, char ** argv)
 	CHECK_RC(rc, "Find hands generator");
 	rc = g_Context.FindExistingNode(XN_NODE_TYPE_GESTURE, g_GestureGenerator);
 	CHECK_RC(rc, "Find gesture generator");
+	//=============================================================================
 
+	//Inizio la registrazione delle callbacks
 	XnCallbackHandle h;
 	if (g_HandsGenerator.IsCapabilitySupported(XN_CAPABILITY_HAND_TOUCHING_FOV_EDGE))
 	{
@@ -387,284 +607,92 @@ int main(int argc, char ** argv)
 	g_GestureGenerator.RegisterToGestureIntermediateStageCompleted(GestureIntermediateStageCompletedHandler, NULL, hGestureIntermediateStageCompleted);
 	g_GestureGenerator.RegisterToGestureReadyForNextIntermediateStage(GestureReadyForNextIntermediateStageHandler, NULL, hGestureReadyForNextIntermediateStage);
 	g_GestureGenerator.RegisterGestureCallbacks(NULL, GestureProgressHandler, NULL, hGestureProgress);
+	//=============================================================================
 
-
-	// Create NITE objects
+	// reate NITE objects
 	g_pSessionManager = new XnVSessionManager;
 	rc = g_pSessionManager->Initialize(&g_Context, "Click,Wave", "RaiseHand");
 	CHECK_RC(rc, "SessionManager::Initialize");
-
 	g_pSessionManager->RegisterSession(NULL, SessionStarting, SessionEnding, FocusProgress);
-
 	g_pDrawer = new XnVPointDrawer(20, g_DepthGenerator);
 	g_pFlowRouter = new XnVFlowRouter;
 	g_pFlowRouter->SetActive(g_pDrawer);
-
 	g_pSessionManager->AddListener(g_pFlowRouter);
-
 	g_pDrawer->RegisterNoPoints(NULL, NoHands);
 	g_pDrawer->SetDepthMap(g_bDrawDepthMap);
+	//=============================================================================
 
 	// Initialization done. Start generating
 	rc = g_Context.StartGeneratingAll();
 	CHECK_RC(rc, "StartGenerating");
+	//=============================================================================
 
+	//Mat opencv in cui disegnare la depth
 	cv::Mat depthshow;
+	//Tasto premuto
 	int key_pre = 0 ;
 
+	//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+	//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+	//								Main loop del programma
+	//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+	//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 	for( ; ; )
 	{
-		if (key_pre == 27)
-			break ;
+		//Terminare il ciclo se ho premuto esc precedentemente ESC
+		if (key_pre == 27) break ;
+
+		//Configuro la modalità dell'output
 		XnMapOutputMode mode;
 		g_DepthGenerator.GetMapOutputMode(mode);
 
-		//g_Context.WaitOneUpdateAll(g_DepthGenerator);
+		//Aggiorno tutti i contenti del kinect (RGB+depth)
 		g_Context.WaitAnyUpdateAll();
+
+		//Acquisisco i metadati
+		// depthMD -> info sulla depth
+		// imageMD -> info sugli RGB
 		g_DepthGenerator.GetMetaData(depthMD);
 		g_ImageGenerator.GetMetaData(imageMD);
 
-		XnDepthPixel* pDepth = depthMD.WritableData();
-
-
-		// Update NITE tree
+		//Aggiorno il tree di NITE
 		g_pSessionManager->Update(&g_Context);
 
-		cv::Mat reprojected=cv::Mat::zeros(480,640,CV_8UC3);
-		////////////////////////////////////////
-		//IF I FOUND THE HAND
-		////////////////////////////////////////
-		if(g_pDrawer->handFound)
-		{
-			XnRGB24Pixel* pRGB = imageMD.WritableRGB24Data();
+		//puntatore al buffer scrivibile delle depth
+		XnDepthPixel* pDepth = depthMD.WritableData();
+		//Mano trovata, chiamo la routine apposita
+		if(g_pDrawer->handFound) hand_found(depthshow,pDepth);
 
-			for (XnUInt y = 0; y < depthMD.YRes(); ++y)
-			{
-				for (XnUInt x = 0; x < depthMD.XRes(); ++x, ++pDepth,++pRGB)
-				{
+		//Matrice dei punti di depth
+		cv::Mat depth16bit(480,640,CV_16SC1,(unsigned short*)depthMD.WritableData());
+		depth16bit.convertTo(depthshow, CV_8UC1, 0.025);
 
-					if (*pDepth>g_pDrawer->pt3D.Z+50 || *pDepth<g_pDrawer->pt3D.Z-50)
-					{
-						*pDepth=0;
-						//pRGB->nBlue=0;
-						//pRGB->nRed=255;
-						//pRGB->nGreen=0;
-
-					}
-
-				}
-			}
-
-
-
-
-			//REPROJECTION
-
-			XnDepthPixel* pDepthIterator = depthMD.WritableData();
-
-			int depth;
-			int ppX;
-			int ppY;
-			int ppZ;
-
-			int ppXp;
-			int ppYp;
-			int ppZp;
-
-			Eigen::Vector3d p;
-			Eigen::Vector3d pprimo;
-
-			int P2D_rgbX;
-			int P2D_rgbY;
-
-			const XnRGB24Pixel* pImageRow;
-			const XnRGB24Pixel* pPixel;
-			pImageRow = imageMD.RGB24Data();
-
-
-			for(int i=0;i<480;i++)
-			{
-				pPixel = pImageRow;
-
-				for(int j=0;j<640;j++,++pDepthIterator,++pPixel)
-				{
-
-					depth=*pDepthIterator;
-					if(depth!=0 || 1)
-					{
-						ppX = (j - cx_d)*depth/fx_d;	//x
-						ppY = (i - cy_d)*depth/fy_d;	//y
-						ppZ = depth; 					//z
-
-						//pprimo=R.dot(p):
-
-						ppXp = (ppX*R[0]+ppY*R[1]+ppZ*R[2]) + T[0];
-						ppYp = (ppX*R[3]+ppY*R[4]+ppZ*R[5]) + T[1];
-						ppZp = (ppX*R[6]+ppY*R[7]+ppZ*R[8]) + T[2];
-
-						P2D_rgbX = (ppXp * fx_rgb / ppZp) + cx_rgb;
-						P2D_rgbY = (ppYp * fy_rgb / ppZp) + cy_rgb;
-
-						//if(P2D_rgbY<480 && P2D_rgbX<640 && P2D_rgbY!=0 && P2D_rgbX!=0 && P2D_rgbY>0 && P2D_rgbX>0)
-						if(ppYp<480 && ppXp<640 && ppYp!=0 && ppXp!=0 && ppYp>0 && ppXp>0)
-						{
-							//nerd way
-							//reprojected.ptr<uchar>(P2D_rgbY)[P2D_rgbX]=255;
-							//easy way
-							//reprojected.at<uchar>(P2D_rgbY,P2D_rgbX)=255;
-							//Vec3b v = reprojected.at<uchar>(P2D_rgbY,P2D_rgbX);
-
-							Point3_<uchar>* p = reprojected.ptr<Point3_<uchar> >(ppYp,ppXp);
-							p->x=depth;
-							p->y=depth;
-							p->z=depth;
-						}
-
-					}
-
-
-				}
-				pImageRow +=640;
-			}
-		}
-
-
-		////////////////////////////////////////
-		////////////////////////////////////////
-
-		//COLORED IMAGE BGR
-
-
-		cv::Mat depth16(480,640,CV_16SC1,(unsigned short*)depthMD.WritableData());
-
-
-		cv::Mat colorArr[3];
-		cv::Mat colorImage;
 
 
 
 
-		const XnRGB24Pixel* pImageRow;
-		const XnRGB24Pixel* pPixel;
-		pImageRow = imageMD.RGB24Data();
+		//COLORED IMAGE BGR
+		//Matrice dei punti pronta per essere disegnata
+		Mat colorShow = Mat::zeros(480,640, CV_8UC3 );
+		RGBkinect2OpenCV(colorShow);
 
 
-		colorArr[0] = cv::Mat(imageMD.YRes(),imageMD.XRes(),CV_8U);
-		colorArr[1] = cv::Mat(imageMD.YRes(),imageMD.XRes(),CV_8U);
-		colorArr[2] = cv::Mat(imageMD.YRes(),imageMD.XRes(),CV_8U);
+		//=========================================
+		//Disegno le finestre
+		//=========================================
 
-		for (int y=0; y<imageMD.YRes(); y++)
-		{
-			pPixel = pImageRow;
-			uchar* Bptr = colorArr[0].ptr<uchar>(y);
-			uchar* Gptr = colorArr[1].ptr<uchar>(y);
-			uchar* Rptr = colorArr[2].ptr<uchar>(y);
-			for(int x=0;x<imageMD.XRes();++x , ++pPixel)
-			{
-				Bptr[x] = pPixel->nBlue;
-				Gptr[x] = pPixel->nGreen;
-				Rptr[x] = pPixel->nRed;
-			}
-			pImageRow += imageMD.XRes();
-		}
-		cv::merge(colorArr,3,colorImage);
-
-
-
-
-		depth16.convertTo(depthshow, CV_8UC1, 0.025);
-
-		if(g_pDrawer->handFound)
-		{
-			cv::Point handPos(g_pDrawer->ptProjective.X, g_pDrawer->ptProjective.Y);
-			cv::circle(depthshow, handPos, 5, cv::Scalar(0xffff), 5, 8, 0);
-			Mat src_gray;
-			int thresh = 10;
-			RNG rng(12345);
-
-			blur( depthshow, src_gray, Size(3,3) );
-
-			Mat threshold_output;
-			vector<vector<Point> > contours;
-			vector<Vec4i> hierarchy;
-
-			/// Detect edges using Threshold
-			threshold( src_gray, threshold_output, thresh, 255, THRESH_BINARY );
-
-			/// Find contours
-			findContours( threshold_output, contours, hierarchy, CV_RETR_TREE, CV_CHAIN_APPROX_SIMPLE, Point(0, 0) );
-
-			/// Find the convex hull object for each contour
-			vector<vector<int> > hullsI (contours.size());
-			vector<vector<Point> >	hullsP (contours.size() );
-			vector<vector<Vec4i> > 	defects (contours.size() );
-
-			for( int i = 0; i < (int)contours.size(); i++ )
-			{
-				convexHull(contours[i], hullsI[i], false, false);
-				convexHull(contours[i], hullsP[i], false, true);
-				if (contours[i].size() >3 )
-				{
-					convexityDefects(contours[i], hullsI[i], defects[i]);
-				}
-			}
-
-			/// Draw contours + hull results
-			Mat drawing = Mat::zeros( threshold_output.size(), CV_8UC3 );
-			vector <Vec4i> biggest (4);
-			Vec4i initVec(0, 0, 0, 0);
-			biggest[0] = initVec;
-			biggest[1] = initVec;
-			biggest[2] = initVec;
-			biggest[3] = initVec;
-			//std::cout << "{";
-			for( int i = 0; i < (int)defects.size(); i++)
-			{
-				//std::cout << "[";
-				for(int j = 0; j < (int)defects[i].size(); j++)
-				{
-					//std::cout << "(" << defects[i][j][0] << " " << defects[i][j][1] << " " << defects[i][j][2] << " " << defects[i][j][3] << " " << std::endl;
-					Vec4i defect(defects[i][j]);
-					Point start(contours[i][defect[0]]);
-					Point end(contours[i][defect[1]]);
-					Point far(contours[i][defect[2]]);
-					int tmp = defect[3]; //distanza minima necessaria per rimuovere punti troppo vicini
-					if(tmp > 1700)
-					{
-						line(drawing, start, handPos, Scalar( 255, 255, 0 ), 1);
-						line(drawing, far, handPos, Scalar( 255, 255, 0 ), 1);
-						line(drawing, far, start, Scalar( 255, 0, 255 ), 1);
-						circle(drawing, far, 2, Scalar( 0, 0, 255 ), 5, 8, 0);		//difetto
-						circle(drawing, start, 2, Scalar( 0, 255, 255 ), 5, 8, 0);	//fingertip
-						//circle(drawing, end, 2, Scalar( 0, 0, 255 ), 5, 8, 0);	//inutile
-					}
-				}
-				//std::cout << "]" << std::endl;
-			}
-			//std::cout << "}" << std::endl;
-
-			for( int i = 0; i < (int)contours.size(); i++ )
-			{
-				drawContours( drawing, contours, i, Scalar( 0, 255, 0 ), 1, 8, vector<Vec4i>(), 0, Point() );
-				//drawContours( drawing, hullsP, i, Scalar( 255, 0, 0 ), 1, 8, vector<Vec4i>(), 0, Point() );
-			}
-
-			/// Show in a window
-			namedWindow( "Hull demo", CV_WINDOW_AUTOSIZE );
-			imshow( "Hull demo", drawing );
-			cv::imshow("Repro", reprojected);
-
-		}
-
-		//Immagine non reproiettata
-		cv::imshow("RGB", colorImage);
+		//RGB
+		cv::imshow("RGB", colorShow);
+		//Depth
 		cv::imshow("Depth", depthshow);
 
-
+		//=========================================
+		//Verifica input utente
+		//=========================================
 		key_pre = cv::waitKey(33);
 
 	}
-	cv::destroyWindow("PrimeSense Nite Point Viewer");
+	cv::destroyWindow("Depth");
 	CleanupExit();
 	return 0;
 }
