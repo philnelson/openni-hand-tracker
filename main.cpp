@@ -391,9 +391,16 @@ void hand_found(cv::Mat depthshow,XnDepthPixel* pDepth)
 {
 	//Nome della finestra da creare
 	namedWindow( "Processing", CV_WINDOW_AUTOSIZE );
-	XnRGB24Pixel* pRGB = imageMD.WritableRGB24Data();
+	namedWindow( "Repro", CV_WINDOW_AUTOSIZE );
 	//Matrice dei punti di depth riproiettati
 	cv::Mat reprojected=cv::Mat::zeros(480,640,CV_8UC3);
+
+	const XnRGB24Pixel* pImageRow;
+	const XnRGB24Pixel* pPixel;
+	pImageRow = imageMD.RGB24Data();
+
+	//Font utilizzato per disegnare nelle finestre
+	CvFont dafont = fontQt("Times",10,Scalar(255,255,255));
 
 	//Ciclo ogni elemento del depth buffer in modo da eliminare (porre a zero più precisamente)
 	//tutti i punti che si trovando al di fuori di un offset dalla Z del punto in cui è stata
@@ -401,16 +408,28 @@ void hand_found(cv::Mat depthshow,XnDepthPixel* pDepth)
 
 	for (XnUInt y = 0; y < depthMD.YRes(); ++y)
 	{
-		for (XnUInt x = 0; x < depthMD.XRes(); ++x, ++pDepth,++pRGB)
+
+		pPixel = pImageRow;
+
+		for (XnUInt x = 0; x < depthMD.XRes(); ++x, ++pDepth,++pPixel)
 		{
 
 			if (*pDepth>g_pDrawer->pt3D.Z+50 || *pDepth<g_pDrawer->pt3D.Z-50)
 			{
 				*pDepth=0;
-
+			}
+			else
+			{
+				Point3_<uchar>* p = reprojected.ptr<Point3_<uchar> >(y,x);
+				p->x=pPixel->nBlue;
+				p->y=pPixel->nGreen;
+				p->z=pPixel->nRed;
 			}
 
 		}
+
+		pImageRow+=640;
+
 	}
 
 //	//REPROJECTION
@@ -552,7 +571,7 @@ void hand_found(cv::Mat depthshow,XnDepthPixel* pDepth)
 				//line(drawing, far, start, Scalar( 255, 0, 255 ), 1);
 				//circle(drawing, far, 2, Scalar( 0, 0, 255 ), 5, 8, 0);		//difetto
 				circle(drawing, start, 2, Scalar( 0, 255, 255 ), 5, 8, 0);		//fingertip
-				CvFont dafont = fontQt("Times",10,Scalar(255,255,255));
+
 				char sentence[10];
 				sprintf(sentence, "P: %d", j);
 				addText(drawing,sentence, start+Point(10,-10),dafont);
@@ -573,7 +592,11 @@ void hand_found(cv::Mat depthshow,XnDepthPixel* pDepth)
 	//Istanzio e mostro la finestra di in cui ho disegnato i contorni e i difetti
 
 	imshow( "Processing", drawing );
-
+	blur( reprojected, reprojected, Size(3,3) );
+	cvtColor( reprojected, reprojected, CV_RGB2GRAY );
+	threshold( reprojected, reprojected, thresh, 255, THRESH_BINARY );
+	addText(reprojected,"RGB Image + Blur pass", Point(0,0),dafont);
+	imshow( "Repro", reprojected );
 
 }
 
@@ -640,11 +663,16 @@ int main(int argc, char ** argv)
 	//Tasto premuto
 	int key_pre = 0 ;
 
+	//Riproietto la depth image sulla rgbimage
+	g_DepthGenerator.GetAlternativeViewPointCap().SetViewPoint(g_ImageGenerator);
+
 	//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 	//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 	//								Main loop del programma
 	//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 	//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+
+
 	for( ; ; )
 	{
 		//Terminare il ciclo se ho premuto esc precedentemente ESC
