@@ -389,6 +389,8 @@ void RGBkinect2OpenCV(cv::Mat colorImage)
 
 void hand_found(cv::Mat depthshow,XnDepthPixel* pDepth)
 {
+	//Nome della finestra da creare
+	namedWindow( "Processing", CV_WINDOW_AUTOSIZE );
 	XnRGB24Pixel* pRGB = imageMD.WritableRGB24Data();
 	//Matrice dei punti di depth riproiettati
 	cv::Mat reprojected=cv::Mat::zeros(480,640,CV_8UC3);
@@ -525,46 +527,52 @@ void hand_found(cv::Mat depthshow,XnDepthPixel* pDepth)
 	//vettore di quattro elementi di tipi Vec4i
 	vector <Vec4i> biggest	(4);
 	Vec4i initVec(0, 0, 0, 0);
+	//Inizializzo ogni vettore contenuti in "biggest" al vettore nullo initVec(0,0,0,0)
 	biggest[0] = initVec;
 	biggest[1] = initVec;
 	biggest[2] = initVec;
 	biggest[3] = initVec;
+
 	//std::cout << "{";
-	for( int i = 0; i < (int)defects.size(); i++)
+	for( int i = 0; i < (int)defects.size(); i++)			//TUTTI I DIFETTI
 	{
 		//std::cout << "[";
-		for(int j = 0; j < (int)defects[i].size(); j++)
+		for(int j = 0; j < (int)defects[i].size(); j++)	//TUTTI I DIFETTI PER QUEL CONTORNO
 		{
 			//std::cout << "(" << defects[i][j][0] << " " << defects[i][j][1] << " " << defects[i][j][2] << " " << defects[i][j][3] << " " << std::endl;
-			Vec4i defect(defects[i][j]);
-			Point start(contours[i][defect[0]]);
-			Point end(contours[i][defect[1]]);
-			Point far(contours[i][defect[2]]);
-			int tmp = defect[3]; //distanza minima necessaria per rimuovere punti troppo vicini
-			if(tmp > 1700)
+			Vec4i defect(defects[i][j]);			//Inizializzo un vettore al i-j-esimo difetto
+			Point start(contours[i][defect[0]]);	//Punto di inizio del difetto
+			Point end(contours[i][defect[1]]);		//Punto di fine del difetto
+			Point far(contours[i][defect[2]]);		//Punto di massima distanza dal contorno
+			int tmp = defect[3]; 					//distanza minima necessaria per rimuovere punti troppo vicini
+			if(tmp > 1700)							//tmp=defects[3] contiene la distanza del difetto dal bordo
 			{
-				line(drawing, start, handPos, Scalar( 255, 255, 0 ), 1);
-				line(drawing, far, handPos, Scalar( 255, 255, 0 ), 1);
-				line(drawing, far, start, Scalar( 255, 0, 255 ), 1);
-				circle(drawing, far, 2, Scalar( 0, 0, 255 ), 5, 8, 0);		//difetto
-				circle(drawing, start, 2, Scalar( 0, 255, 255 ), 5, 8, 0);	//fingertip
-				//circle(drawing, end, 2, Scalar( 0, 0, 255 ), 5, 8, 0);	//inutile
+				//line(drawing, start, handPos, Scalar( 255, 255, 0 ), 1);
+				//line(drawing, far, handPos, Scalar( 255, 255, 0 ), 1);
+				//line(drawing, far, start, Scalar( 255, 0, 255 ), 1);
+				//circle(drawing, far, 2, Scalar( 0, 0, 255 ), 5, 8, 0);		//difetto
+				circle(drawing, start, 2, Scalar( 0, 255, 255 ), 5, 8, 0);		//fingertip
+				CvFont dafont = fontQt("Times",10,Scalar(255,255,255));
+				char sentence[10];
+				sprintf(sentence, "P: %d", j);
+				addText(drawing,sentence, start+Point(10,-10),dafont);
+				//circle(drawing, end, 2, Scalar( 0, 0, 255 ), 5, 8, 0);		//inutile
 			}
 		}
 		//std::cout << "]" << std::endl;
 	}
 	//std::cout << "}" << std::endl;
 
+	//Disegno i contorni della mano che ho elaborato precedentemente
 	for( int i = 0; i < (int)contours.size(); i++ )
 	{
 		drawContours( drawing, contours, i, Scalar( 0, 255, 0 ), 1, 8, vector<Vec4i>(), 0, Point() );
 		//drawContours( drawing, hullsP, i, Scalar( 255, 0, 0 ), 1, 8, vector<Vec4i>(), 0, Point() );
 	}
 
-	/// Show in a window
-	namedWindow( "Processing", CV_WINDOW_AUTOSIZE );
+	//Istanzio e mostro la finestra di in cui ho disegnato i contorni e i difetti
+
 	imshow( "Processing", drawing );
-	//imshow("Repro", reprojected);
 
 
 }
@@ -682,8 +690,10 @@ int main(int argc, char ** argv)
 		//=========================================
 
 		//RGB
+		namedWindow("RGB");
 		cv::imshow("RGB", colorShow);
 		//Depth
+		namedWindow("Depth");
 		cv::imshow("Depth", depthshow);
 
 		//=========================================
