@@ -108,6 +108,9 @@ XnVFlowRouter* g_pFlowRouter;
 // the drawer
 XnVPointDrawer* g_pDrawer;
 
+//Font utilizzato per disegnare nelle finestre
+CvFont dafont = fontQt("Times",10,Scalar(255,255,255));
+
 #define GL_WIN_SIZE_X 720
 #define GL_WIN_SIZE_Y 480
 
@@ -399,9 +402,6 @@ void hand_found(cv::Mat depthshow,XnDepthPixel* pDepth)
 	const XnRGB24Pixel* pPixel;
 	pImageRow = imageMD.RGB24Data();
 
-	//Font utilizzato per disegnare nelle finestre
-	CvFont dafont = fontQt("Times",10,Scalar(255,255,255));
-
 	//Ciclo ogni elemento del depth buffer in modo da eliminare (porre a zero più precisamente)
 	//tutti i punti che si trovando al di fuori di un offset dalla Z del punto in cui è stata
 	//individuata la mano
@@ -590,12 +590,14 @@ void hand_found(cv::Mat depthshow,XnDepthPixel* pDepth)
 	}
 
 	//Istanzio e mostro la finestra di in cui ho disegnato i contorni e i difetti
-
+	putText(drawing, "Fingertips", Point(10,20), FONT_HERSHEY_SIMPLEX, 0.5f, Scalar(255,255,255)); //perchè non è una 8bit a 3 canali
 	imshow( "Processing", drawing );
-	blur( reprojected, reprojected, Size(3,3) );
+
+
 	cvtColor( reprojected, reprojected, CV_RGB2GRAY );
+	blur( reprojected, reprojected, Size(3,3) );
 	threshold( reprojected, reprojected, thresh, 255, THRESH_BINARY );
-	addText(reprojected,"RGB Image + Blur pass", Point(0,0),dafont);
+	putText(reprojected, "RGB Image + Blur pass + Threshold", Point(10,20), FONT_HERSHEY_SIMPLEX, 0.5f, Scalar(255,255,255)); //perchè non è una 8bit a 3 canali
 	imshow( "Repro", reprojected );
 
 }
@@ -719,10 +721,13 @@ int main(int argc, char ** argv)
 
 		//RGB
 		namedWindow("RGB");
-		cv::imshow("RGB", colorShow);
+		addText(colorShow,"RGB Image", Point(10,20),dafont);
+		imshow("RGB", colorShow);
+
 		//Depth
 		namedWindow("Depth");
-		cv::imshow("Depth", depthshow);
+		//putText(depthshow, "Depth Image", Point(10,20), FONT_HERSHEY_SIMPLEX, 0.5f, Scalar(255,255,255)); //perchè non è una 8bit a 3 canali, non è saggio mostrare questa label
+		imshow("Depth", depthshow);
 
 		//=========================================
 		//Verifica input utente
@@ -730,7 +735,7 @@ int main(int argc, char ** argv)
 		key_pre = cv::waitKey(33);
 
 	}
-	cv::destroyWindow("Depth");
+
 	CleanupExit();
 	return 0;
 }
