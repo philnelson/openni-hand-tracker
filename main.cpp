@@ -110,6 +110,7 @@ XnVPointDrawer* g_pDrawer;
 
 //Font utilizzato per disegnare nelle finestre
 CvFont dafont = fontQt("Times",10,Scalar(255,255,255));
+float angle=0.0f;
 
 #define GL_WIN_SIZE_X 720
 #define GL_WIN_SIZE_Y 480
@@ -143,6 +144,7 @@ void CleanupExit()
 }
 //*************************************************************************************
 //*************************************************************************************
+
 
 
 //*************************************************************************************
@@ -243,120 +245,6 @@ void XN_CALLBACK_TYPE GestureProgressHandler(xn::GestureGenerator& generator, co
 //glutDisplay: called each frame
 //*************************************************************************************
 
-void glutDisplay (void)
-{
-
-	glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	// Setup the OpenGL viewpoint
-	glMatrixMode(GL_PROJECTION);
-	glPushMatrix();
-	glLoadIdentity();
-
-	XnMapOutputMode mode;
-	g_DepthGenerator.GetMapOutputMode(mode);
-
-	glOrtho(0, mode.nXRes, mode.nYRes, 0, -1.0, 1.0);
-
-	glDisable(GL_TEXTURE_2D);
-
-	if (!g_bPause)
-	{
-		// Read next available data
-		g_Context.WaitOneUpdateAll(g_DepthGenerator);
-		// Update NITE tree
-		g_pSessionManager->Update(&g_Context);
-
-		PrintSessionState(g_SessionState);
-
-	}
-
-	glutSwapBuffers();
-
-}
-
-//*************************************************************************************
-//IDLE FUNC
-//*************************************************************************************
-void glutIdle (void)
-{
-	if (g_bQuit) {
-		CleanupExit();
-	}
-
-	// Display the frame
-	glutPostRedisplay();
-}
-//*************************************************************************************
-//*************************************************************************************
-
-
-//*************************************************************************************
-//User input
-//*************************************************************************************
-void glutKeyboard (unsigned char key, int x, int y)
-{
-	switch (key)
-	{
-	case 27:
-		// Exit
-		CleanupExit();
-		break;
-	case'p':
-		// Toggle pause
-		g_bPause = !g_bPause;
-		break;
-	case 'd':
-		// Toggle drawing of the depth map
-		g_bDrawDepthMap = !g_bDrawDepthMap;
-		g_pDrawer->SetDepthMap(g_bDrawDepthMap);
-		break;
-	case 'f':
-		g_bPrintFrameID = !g_bPrintFrameID;
-		g_pDrawer->SetFrameID(g_bPrintFrameID);
-		break;
-	case 's':
-		// Toggle smoothing
-		if (g_fSmoothing == 0)
-			g_fSmoothing = 0.1;
-		else
-			g_fSmoothing = 0;
-		g_HandsGenerator.SetSmoothing(g_fSmoothing);
-		break;
-	case 'e':
-		// end current session
-		g_pSessionManager->EndSession();
-		break;
-	}
-}
-//*************************************************************************************
-//*************************************************************************************
-
-//*************************************************************************************
-//GL init parameters
-//*************************************************************************************
-void glInit (int * pargc, char ** argv)
-{
-	glutInit(pargc, argv);
-	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
-	glutInitWindowSize(GL_WIN_SIZE_X, GL_WIN_SIZE_Y);
-	glutCreateWindow ("PrimeSense Nite Point Viewer");
-	glutFullScreen();
-	glutSetCursor(GLUT_CURSOR_NONE);
-
-	glutKeyboardFunc(glutKeyboard);
-	glutDisplayFunc(glutDisplay);
-	glutIdleFunc(glutIdle);
-
-	glDisable(GL_DEPTH_TEST);
-	glEnable(GL_TEXTURE_2D);
-
-	glEnableClientState(GL_VERTEX_ARRAY);
-	glDisableClientState(GL_COLOR_ARRAY);
-}
-//*************************************************************************************
-//*************************************************************************************
-
 void RGBkinect2OpenCV(cv::Mat colorImage)
 {
 	//Puntatore alla riga di pixel
@@ -394,7 +282,7 @@ void hand_found(cv::Mat depthshow,XnDepthPixel* pDepth)
 {
 	//Nome della finestra da creare
 	namedWindow( "Processing", CV_WINDOW_AUTOSIZE );
-	namedWindow( "Repro", CV_WINDOW_AUTOSIZE );
+	//namedWindow( "Repro", CV_WINDOW_AUTOSIZE );
 	//Matrice dei punti di depth riproiettati
 	cv::Mat reprojected=cv::Mat::zeros(480,640,CV_8UC3);
 
@@ -432,72 +320,72 @@ void hand_found(cv::Mat depthshow,XnDepthPixel* pDepth)
 
 	}
 
-//	//REPROJECTION
-//	XnDepthPixel* pDepthIterator = depthMD.WritableData();
-//	int depth;
-//	int ppX;
-//	int ppY;
-//	int ppZ;
-//
-//	int ppXp;
-//	int ppYp;
-//	int ppZp;
-//
-//	Eigen::Vector3d p;
-//	Eigen::Vector3d pprimo;
-//
-//	int P2D_rgbX;
-//	int P2D_rgbY;
-//
-//	const XnRGB24Pixel* pImageRow;
-//	const XnRGB24Pixel* pPixel;
-//	pImageRow = imageMD.RGB24Data();
-//
-//
-//	for(int i=0;i<480;i++)
-//	{
-//		pPixel = pImageRow;
-//
-//		for(int j=0;j<640;j++,++pDepthIterator,++pPixel)
-//		{
-//
-//			depth=*pDepthIterator;
-//			if(depth!=0 || 1)
-//			{
-//				ppX = (j - cx_d)*depth/fx_d;	//x
-//				ppY = (i - cy_d)*depth/fy_d;	//y
-//				ppZ = depth; 					//z
-//
-//				//pprimo=R.dot(p):
-//
-//				ppXp = (ppX*R[0]+ppY*R[1]+ppZ*R[2]) + T[0];
-//				ppYp = (ppX*R[3]+ppY*R[4]+ppZ*R[5]) + T[1];
-//				ppZp = (ppX*R[6]+ppY*R[7]+ppZ*R[8]) + T[2];
-//
-//				P2D_rgbX = (ppXp * fx_rgb / ppZp) + cx_rgb;
-//				P2D_rgbY = (ppYp * fy_rgb / ppZp) + cy_rgb;
-//
-//				//if(P2D_rgbY<480 && P2D_rgbX<640 && P2D_rgbY!=0 && P2D_rgbX!=0 && P2D_rgbY>0 && P2D_rgbX>0)
-//				if(ppYp<480 && ppXp<640 && ppYp!=0 && ppXp!=0 && ppYp>0 && ppXp>0)
-//				{
-//					//nerd way
-//					//reprojected.ptr<uchar>(P2D_rgbY)[P2D_rgbX]=255;
-//					//easy way
-//					//reprojected.at<uchar>(P2D_rgbY,P2D_rgbX)=255;
-//					//Vec3b v = reprojected.at<uchar>(P2D_rgbY,P2D_rgbX);
-//
-//					Point3_<uchar>* p = reprojected.ptr<Point3_<uchar> >(ppYp,ppXp);
-//					p->x=depth;
-//					p->y=depth;
-//					p->z=depth;
-//				}
-//
-//			}
-//
-//
-//		}
-//		pImageRow +=640;
-//	}
+	//	//REPROJECTION
+	//	XnDepthPixel* pDepthIterator = depthMD.WritableData();
+	//	int depth;
+	//	int ppX;
+	//	int ppY;
+	//	int ppZ;
+	//
+	//	int ppXp;
+	//	int ppYp;
+	//	int ppZp;
+	//
+	//	Eigen::Vector3d p;
+	//	Eigen::Vector3d pprimo;
+	//
+	//	int P2D_rgbX;
+	//	int P2D_rgbY;
+	//
+	//	const XnRGB24Pixel* pImageRow;
+	//	const XnRGB24Pixel* pPixel;
+	//	pImageRow = imageMD.RGB24Data();
+	//
+	//
+	//	for(int i=0;i<480;i++)
+	//	{
+	//		pPixel = pImageRow;
+	//
+	//		for(int j=0;j<640;j++,++pDepthIterator,++pPixel)
+	//		{
+	//
+	//			depth=*pDepthIterator;
+	//			if(depth!=0 || 1)
+	//			{
+	//				ppX = (j - cx_d)*depth/fx_d;	//x
+	//				ppY = (i - cy_d)*depth/fy_d;	//y
+	//				ppZ = depth; 					//z
+	//
+	//				//pprimo=R.dot(p):
+	//
+	//				ppXp = (ppX*R[0]+ppY*R[1]+ppZ*R[2]) + T[0];
+	//				ppYp = (ppX*R[3]+ppY*R[4]+ppZ*R[5]) + T[1];
+	//				ppZp = (ppX*R[6]+ppY*R[7]+ppZ*R[8]) + T[2];
+	//
+	//				P2D_rgbX = (ppXp * fx_rgb / ppZp) + cx_rgb;
+	//				P2D_rgbY = (ppYp * fy_rgb / ppZp) + cy_rgb;
+	//
+	//				//if(P2D_rgbY<480 && P2D_rgbX<640 && P2D_rgbY!=0 && P2D_rgbX!=0 && P2D_rgbY>0 && P2D_rgbX>0)
+	//				if(ppYp<480 && ppXp<640 && ppYp!=0 && ppXp!=0 && ppYp>0 && ppXp>0)
+	//				{
+	//					//nerd way
+	//					//reprojected.ptr<uchar>(P2D_rgbY)[P2D_rgbX]=255;
+	//					//easy way
+	//					//reprojected.at<uchar>(P2D_rgbY,P2D_rgbX)=255;
+	//					//Vec3b v = reprojected.at<uchar>(P2D_rgbY,P2D_rgbX);
+	//
+	//					Point3_<uchar>* p = reprojected.ptr<Point3_<uchar> >(ppYp,ppXp);
+	//					p->x=depth;
+	//					p->y=depth;
+	//					p->z=depth;
+	//				}
+	//
+	//			}
+	//
+	//
+	//		}
+	//		pImageRow +=640;
+	//	}
 
 
 	//Istanzio il punto2D nella finestra in cui ho individuato la mano
@@ -594,13 +482,128 @@ void hand_found(cv::Mat depthshow,XnDepthPixel* pDepth)
 	imshow( "Processing", drawing );
 
 
-	cvtColor( reprojected, reprojected, CV_RGB2GRAY );
-	blur( reprojected, reprojected, Size(3,3) );
-	threshold( reprojected, reprojected, thresh, 255, THRESH_BINARY );
-	putText(reprojected, "RGB Image + Blur pass + Threshold", Point(10,20), FONT_HERSHEY_SIMPLEX, 0.5f, Scalar(255,255,255)); //perchè non è una 8bit a 3 canali
-	imshow( "Repro", reprojected );
+	//cvtColor( reprojected, reprojected, CV_RGB2GRAY );
+	//blur( reprojected, reprojected, Size(3,3) );
+	//threshold( reprojected, reprojected, thresh, 255, THRESH_BINARY );
+	//putText(reprojected, "RGB Image + Blur pass + Threshold", Point(10,20), FONT_HERSHEY_SIMPLEX, 0.5f, Scalar(255,255,255)); //perchè non è una 8bit a 3 canali
+	//imshow( "Repro", reprojected );
 
 }
+
+void glutDisplay (void*)
+{
+
+	glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	//glFrustum(-10.0, 10.0, -10.0, 10.0, -1, 5);
+	//gluPerspective(90,1,1,10);
+	glOrtho(-1.1,1.1,-1.1,1.1,-5,5);
+	glColor3f(0.0f,1.0f,0.0f);
+
+
+	//gluLookAt(0,0.5,0,0,0.5,0,0,1,0);
+
+	glPushMatrix();
+	glTranslatef(0,0,-2.0f);
+	glRotatef(angle,0.0f,1.0f,0.0f);
+	glutWireSphere(0.5f,10,10);
+	glPopMatrix();
+
+	glPointSize(5.0f);
+	glBegin(GL_POINTS); //starts drawing of points
+		glVertex3f(1.0f,1.0f,0.0f);//upper-right corner
+		glVertex3f(-1.0f,-1.0f,0.0f);//lower-left corner
+		glVertex3f(-1.0f,1.0f,0.0f);//upper-right corner
+		glVertex3f(1.0f,-1.0f,0.0f);//lower-left corner
+	glEnd();//end drawing of points
+
+
+	angle+=0.5f;
+}
+
+//*************************************************************************************
+//IDLE FUNC
+//*************************************************************************************
+void glutIdle (void)
+{
+	if (g_bQuit) {
+		CleanupExit();
+	}
+
+	// Display the frame, do nothing
+	glutPostRedisplay();
+}
+//*************************************************************************************
+//*************************************************************************************
+
+
+//*************************************************************************************
+//User input
+//*************************************************************************************
+void glutKeyboard (unsigned char key, int x, int y)
+{
+	switch (key)
+	{
+	case 27:
+		// Exit
+		CleanupExit();
+		break;
+	case'p':
+		// Toggle pause
+		g_bPause = !g_bPause;
+		break;
+	case 'd':
+		// Toggle drawing of the depth map
+		g_bDrawDepthMap = !g_bDrawDepthMap;
+		g_pDrawer->SetDepthMap(g_bDrawDepthMap);
+		break;
+	case 'f':
+		g_bPrintFrameID = !g_bPrintFrameID;
+		g_pDrawer->SetFrameID(g_bPrintFrameID);
+		break;
+	case 's':
+		// Toggle smoothing
+		if (g_fSmoothing == 0)
+			g_fSmoothing = 0.1;
+		else
+			g_fSmoothing = 0;
+		g_HandsGenerator.SetSmoothing(g_fSmoothing);
+		break;
+	case 'e':
+		// end current session
+		g_pSessionManager->EndSession();
+		break;
+	}
+}
+//*************************************************************************************
+//*************************************************************************************
+
+//*************************************************************************************
+//GL init parameters (non utilizzata)
+//*************************************************************************************
+//void glInit (int * pargc, char ** argv)
+//{
+//	glutInit(pargc, argv);
+//	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
+//	glutInitWindowSize(GL_WIN_SIZE_X, GL_WIN_SIZE_Y);
+//	glutCreateWindow ("PrimeSense Nite Point Viewer");
+//	glutFullScreen();
+//	glutSetCursor(GLUT_CURSOR_NONE);
+//
+//	glutKeyboardFunc(glutKeyboard);
+//	glutDisplayFunc(glutDisplay);
+//	glutIdleFunc(glutIdle);
+//
+//	glDisable(GL_DEPTH_TEST);
+//	glEnable(GL_TEXTURE_2D);
+//
+//	glEnableClientState(GL_VERTEX_ARRAY);
+//	glDisableClientState(GL_COLOR_ARRAY);
+//}
+//*************************************************************************************
+//*************************************************************************************
 
 //*************************************************************************************
 //MAIN FUNC
@@ -674,9 +677,31 @@ int main(int argc, char ** argv)
 	//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 	//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
+	glutInit(&argc, argv);
+	// OpenGL init
+	//		glutInit(&argc, argv);
+	//		glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
+	//		glutInitWindowSize(GL_WIN_SIZE_X, GL_WIN_SIZE_Y);
+	//		glutCreateWindow ("GLUT Window");
+	//glutFullScreen();
+	//glutSetCursor(GLUT_CURSOR_NONE);
+	//glutKeyboardFunc(glutKeyboard);
+	//glutDisplayFunc(glutDisplay);
+	//glutIdleFunc(glutIdle);
 
+	//		glEnable(GL_DEPTH_TEST);
+	//		glEnable(GL_TEXTURE_2D);
+	// Per frame code is in glutDisplay
+	//glutMainLoop();
+
+	const string windowName = "OpenGL Sample";
+
+	namedWindow(windowName,CV_WINDOW_OPENGL | CV_WINDOW_AUTOSIZE);
+	resizeWindow(windowName, 640, 480);
+	setOpenGlDrawCallback(windowName, glutDisplay);
 	for( ; ; )
 	{
+		updateWindow(windowName);
 		//Terminare il ciclo se ho premuto esc precedentemente ESC
 		if (key_pre == 27) break ;
 
@@ -720,19 +745,24 @@ int main(int argc, char ** argv)
 		//=========================================
 
 		//RGB
-		namedWindow("RGB");
-		addText(colorShow,"RGB Image", Point(10,20),dafont);
-		imshow("RGB", colorShow);
+		//namedWindow("RGB");
+		//addText(colorShow,"RGB Image", Point(10,20),dafont);
+		//imshow("RGB", colorShow);
 
 		//Depth
 		namedWindow("Depth");
 		//putText(depthshow, "Depth Image", Point(10,20), FONT_HERSHEY_SIMPLEX, 0.5f, Scalar(255,255,255)); //perchè non è una 8bit a 3 canali, non è saggio mostrare questa label
 		imshow("Depth", depthshow);
 
+		//Mat fake=cv::Mat::zeros(480,640,CV_8UC3);
+
+
+
 		//=========================================
 		//Verifica input utente
 		//=========================================
 		key_pre = cv::waitKey(33);
+
 
 	}
 
