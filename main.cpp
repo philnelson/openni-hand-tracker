@@ -11,6 +11,7 @@
 #include <Eigen/Core>
 #include "PointDrawer.h"
 #include <GL/glut.h>
+#include "Hand.h"
 #include "signal_catch.h"
 //*************************************************************************************
 
@@ -101,6 +102,10 @@ xn::GestureGenerator g_GestureGenerator;
 xn::DepthMetaData depthMD;
 xn::ImageMetaData imageMD;
 
+//Mano
+Hand* mano;
+float stato_mano[HAND_DIM];
+
 // NITE objects
 XnVSessionManager* g_pSessionManager;
 XnVFlowRouter* g_pFlowRouter;
@@ -111,6 +116,9 @@ XnVPointDrawer* g_pDrawer;
 //Font utilizzato per disegnare nelle finestre
 CvFont dafont = fontQt("Times",10,Scalar(255,255,255));
 float angle=0.0f;
+int trackX=0;
+int trackY=0;
+int trackZ=0;
 
 #define GL_WIN_SIZE_X 720
 #define GL_WIN_SIZE_Y 480
@@ -277,6 +285,23 @@ void RGBkinect2OpenCV(cv::Mat colorImage)
 	}
 	cv::merge(colorArr,3,colorImage);
 }
+
+float myrand()
+{
+	return (float)rand()/RAND_MAX;
+}
+
+void init_mano(float *state)
+{
+	for(int i=0;i<HAND_DIM;i++)
+	{
+		state[i]=myrand()*50;
+		//tmp=(myrand()*( mano->Constraints[i][1]-mano->Constraints[i][0] ) )+mano->Constraints[i][0];
+	}
+	state[18]=state[19]=state[20]=state[15]=state[16]=state[17]=0;
+	state[15]=-90;
+}
+
 
 void hand_found(cv::Mat depthshow,XnDepthPixel* pDepth)
 {
@@ -492,23 +517,22 @@ void hand_found(cv::Mat depthshow,XnDepthPixel* pDepth)
 
 void glutDisplay (void*)
 {
-
+	glEnable(GL_DEPTH_TEST);
 	glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glMatrixMode(GL_PROJECTION);
+	//glMatrixMode(GL_PROJECTION);
+	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	//glFrustum(-10.0, 10.0, -10.0, 10.0, -1, 5);
-	//gluPerspective(90,1,1,10);
-	glOrtho(-1.1,1.1,-1.1,1.1,-5,5);
-	glColor3f(0.0f,1.0f,0.0f);
+	glOrtho(-1.1,1.1,-1.1,1.1,0,1000);
 
-
-	//gluLookAt(0,0.5,0,0,0.5,0,0,1,0);
 
 	glPushMatrix();
-	glTranslatef(0,0,-2.0f);
-	glRotatef(angle,0.0f,1.0f,0.0f);
-	glutWireSphere(0.5f,10,10);
+		glTranslatef(0,0,-5);
+		glScalef(0.3f,0.3f,0.3f);
+		glRotatef(trackX,1,0,0);
+		glRotatef(trackY,0,1,0);
+		glRotatef(trackZ,0,0,1);
+		mano->draw();
 	glPopMatrix();
 
 	glPointSize(5.0f);
@@ -519,8 +543,11 @@ void glutDisplay (void*)
 		glVertex3f(1.0f,-1.0f,0.0f);//lower-left corner
 	glEnd();//end drawing of points
 
+	init_mano(stato_mano);
+	mano->setState(stato_mano);
 
-	angle+=0.5f;
+	glFlush();
+
 }
 
 //*************************************************************************************
@@ -605,11 +632,17 @@ void glutKeyboard (unsigned char key, int x, int y)
 //*************************************************************************************
 //*************************************************************************************
 
+
+
 //*************************************************************************************
 //MAIN FUNC
 //*************************************************************************************
 int main(int argc, char ** argv)
 {
+
+	init_mano(stato_mano);
+	mano = new Hand(stato_mano);
+
 	//Variabile di stato per il kinect
 	XnStatus rc = XN_STATUS_OK;
 	//Enumeratore per gli errori
@@ -678,6 +711,13 @@ int main(int argc, char ** argv)
 	//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 
 	glutInit(&argc, argv);
+	glutInitDisplayMode(GLUT_RGB|GLUT_DOUBLE|GLUT_DEPTH);
+
+	glClearColor(0,0,0,0);
+	glClearDepth(1.0f);
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+
 	// OpenGL init
 	//		glutInit(&argc, argv);
 	//		glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
@@ -697,6 +737,9 @@ int main(int argc, char ** argv)
 	const string windowName = "OpenGL Sample";
 
 	namedWindow(windowName,CV_WINDOW_OPENGL | CV_WINDOW_AUTOSIZE);
+	createTrackbar( "X", windowName, &trackX, 360,  NULL);//OK tested
+	createTrackbar( "Y", windowName, &trackY, 360,  NULL);//OK tested
+	createTrackbar( "Z", windowName, &trackZ, 360,  NULL);//OK tested
 	resizeWindow(windowName, 640, 480);
 	setOpenGlDrawCallback(windowName, glutDisplay);
 	for( ; ; )
