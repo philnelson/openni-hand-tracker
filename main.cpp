@@ -11,7 +11,7 @@
 #include <Eigen/Core>
 #include "PointDrawer.h"
 #include <GL/glut.h>
-#include "Hand.h"
+#include "Palm.h"
 #include "signal_catch.h"
 //*************************************************************************************
 
@@ -87,6 +87,13 @@ double R[]={0.9998462882657779,0.0012635359098409581,-0.017487233004436643,
 using namespace cv;
 //*************************************************************************************
 
+float stormo[60][6];
+float stormo_errori[60];
+float stormo_migliore[6];
+float stormo_migliore_errore;
+float stormo_migliore_personale[60][6];
+
+
 
 //*************************************************************************************
 //Definizione variabili Globali e Define vari
@@ -102,9 +109,13 @@ xn::GestureGenerator g_GestureGenerator;
 xn::DepthMetaData depthMD;
 xn::ImageMetaData imageMD;
 
+//KALMAN
+KalmanFilter KF(4, 2, 0);
+
 //Mano
-Hand* mano;
-float stato_mano[HAND_DIM];
+//Hand* mano;
+Palm* palmo;
+//float stato_mano[HAND_DIM];
 
 // NITE objects
 XnVSessionManager* g_pSessionManager;
@@ -119,6 +130,10 @@ float angle=0.0f;
 int trackX=0;
 int trackY=0;
 int trackZ=0;
+int prova;
+int angleT=90;
+int distT=40;
+int dist2T=70;
 
 #define GL_WIN_SIZE_X 720
 #define GL_WIN_SIZE_Y 480
@@ -214,6 +229,51 @@ void XN_CALLBACK_TYPE TouchingCallback(xn::HandTouchingFOVEdgeCapability& genera
 //*************************************************************************************
 //*************************************************************************************
 
+
+
+//PSO
+
+float myrand()
+{
+	return (float)rand()/RAND_MAX;
+}
+
+void pso_init()
+{
+	for(int i=0;i<60;i++)
+	{
+		stormo[i][0]=myrand()*640;
+		stormo[i][1]=myrand()*480;
+		stormo[i][2]=0;
+		stormo[i][3]=0;
+		stormo[i][4]=0;
+		stormo[i][5]=myrand()*360-180;
+	}
+}
+
+void pso_update()
+{
+
+}
+
+void pso_best()
+{
+
+}
+
+void pso_compute_errore(float *particella,int *errore)
+{
+	XnDepthPixel* pDepth = depthMD.WritableData();
+	int error_count=0;
+	for(int i=0;i<8;i++)
+	{
+		int index=-particella[i][1]*640+particella[i][0];
+		if(pDepth[index]==0)
+			error_count++;
+	}
+	*errore=error_count;
+}
+
 //*************************************************************************************
 //Gesture Callback
 //*************************************************************************************
@@ -250,8 +310,38 @@ void XN_CALLBACK_TYPE GestureProgressHandler(xn::GestureGenerator& generator, co
 
 
 //*************************************************************************************
-//glutDisplay: called each frame
+//AXIS: called each frame
 //*************************************************************************************
+void DrawAxes(float length)
+{
+	glPushMatrix();
+	glScalef(length, length, length);
+
+	glLineWidth(2.f);
+	glBegin(GL_LINES);
+
+	// x red
+	glColor3f(1.f, 0.f, 0.f);
+	glVertex3f(0.f, 0.f, 0.f);
+	glVertex3f(1.f, 0.f, 0.f);
+
+	// y green
+	glColor3f(0.f, 1.f, 0.f);
+	glVertex3f(0.f, 0.f, 0.f);
+	glVertex3f(0.f, 1.f, 0.f);
+
+	// z blue
+	glColor3f(0.f, 0.f, 1.f);
+	glVertex3f(0.f, 0.f, 0.f);
+	glVertex3f(0.f, 0.f, 1.f);
+
+	glEnd();
+	glLineWidth(1.f);
+
+	glPopMatrix();
+}
+
+
 
 void RGBkinect2OpenCV(cv::Mat colorImage)
 {
@@ -286,11 +376,7 @@ void RGBkinect2OpenCV(cv::Mat colorImage)
 	cv::merge(colorArr,3,colorImage);
 }
 
-float myrand()
-{
-	return (float)rand()/RAND_MAX;
-}
-
+/*
 void init_mano(float *state)
 {
 	for(int i=0;i<HAND_DIM;i++)
@@ -301,12 +387,15 @@ void init_mano(float *state)
 	state[18]=state[19]=state[20]=state[15]=state[16]=state[17]=0;
 	state[15]=-90;
 }
-
+ */
 
 void hand_found(cv::Mat depthshow,XnDepthPixel* pDepth)
 {
 	//Nome della finestra da creare
 	namedWindow( "Processing", CV_WINDOW_AUTOSIZE );
+	createTrackbar( "Angle", "Processing", &angleT, 360,  NULL);//OK tested
+	createTrackbar( "Dist min", "Processing", &distT, 200,  NULL);//OK tested
+	createTrackbar( "Dist max", "Processing", &dist2T, 200,  NULL);//OK tested
 	//namedWindow( "Repro", CV_WINDOW_AUTOSIZE );
 	//Matrice dei punti di depth riproiettati
 	cv::Mat reprojected=cv::Mat::zeros(480,640,CV_8UC3);
@@ -479,20 +568,36 @@ void hand_found(cv::Mat depthshow,XnDepthPixel* pDepth)
 			int tmp = defect[3]; 					//distanza minima necessaria per rimuovere punti troppo vicini
 			if(tmp > 1700)							//tmp=defects[3] contiene la distanza del difetto dal bordo
 			{
+				Point v1 = start - handPos;
+				Point v2 = far - handPos;
+				Point v = start - far;
+				float angle = acos( (v1.x*v2.x + v1.y*v2.y) / (norm(v1) * norm(v2)) );
+				float dist2 = sqrt(v2.x*v2.x + v2.y*v2.y);
+				float dist = sqrt(v.x*v.x + v.y*v.y);
+				//std::cout << "Dist: " << dist << v.x << v.y << std::endl;
+
 				//line(drawing, start, handPos, Scalar( 255, 255, 0 ), 1);
 				//line(drawing, far, handPos, Scalar( 255, 255, 0 ), 1);
 				//line(drawing, far, start, Scalar( 255, 0, 255 ), 1);
 				//circle(drawing, far, 2, Scalar( 0, 0, 255 ), 5, 8, 0);		//difetto
-				circle(drawing, start, 2, Scalar( 0, 255, 255 ), 5, 8, 0);		//fingertip
 
-				char sentence[10];
-				sprintf(sentence, "P: %d", j);
-				addText(drawing,sentence, start+Point(10,-10),dafont);
-				//circle(drawing, end, 2, Scalar( 0, 0, 255 ), 5, 8, 0);		//inutile
+
+				if(angle*180/3.14 < angleT && dist2 < dist2T && dist > distT)
+				{
+
+					circle(drawing, start, 2, Scalar( 0, 255, 255 ), 5, 8, 0);		//fingertip
+					char sentence[10];
+					sprintf(sentence, "P: %d", j);
+					addText(drawing,sentence, start+Point(10,-10),dafont);
+					//circle(drawing, end, 2, Scalar( 0, 0, 255 ), 5, 8, 0);		//inutile
+				}
 			}
 		}
 		//std::cout << "]" << std::endl;
 	}
+
+
+
 	//std::cout << "}" << std::endl;
 
 	//Disegno i contorni della mano che ho elaborato precedentemente
@@ -521,30 +626,29 @@ void glutDisplay (void*)
 	glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	//glMatrixMode(GL_PROJECTION);
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	glOrtho(-1.1,1.1,-1.1,1.1,0,1000);
 
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	glOrtho(0,640,-480,0,0,100000);
 
 	glPushMatrix();
-		glTranslatef(0,0,-5);
-		glScalef(0.3f,0.3f,0.3f);
-		glRotatef(trackX,1,0,0);
-		glRotatef(trackY,0,1,0);
-		glRotatef(trackZ,0,0,1);
-		mano->draw();
+	glTranslatef(0,0,-100);
+	glRotatef(trackX,1,0,0);
+	glRotatef(trackY,0,1,0);
+	glRotatef(trackZ,0,0,1);
+	//mano->draw();
+	palmo->Draw();
+	palmo->Update();
+	palmo->posa[PALMroty]=prova*3.14/180;
+	palmo->posa[PALMx]=320;
+	palmo->posa[PALMy]=240;
+	palmo->posa[PALMy]=-palmo->posa[PALMy];
+
+	DrawAxes(1.0f);
 	glPopMatrix();
 
-	glPointSize(5.0f);
-	glBegin(GL_POINTS); //starts drawing of points
-		glVertex3f(1.0f,1.0f,0.0f);//upper-right corner
-		glVertex3f(-1.0f,-1.0f,0.0f);//lower-left corner
-		glVertex3f(-1.0f,1.0f,0.0f);//upper-right corner
-		glVertex3f(1.0f,-1.0f,0.0f);//lower-left corner
-	glEnd();//end drawing of points
-
-	init_mano(stato_mano);
-	mano->setState(stato_mano);
+	//init_mano(stato_mano);
+	//mano->setState(stato_mano);
 
 	glFlush();
 
@@ -639,9 +743,10 @@ void glutKeyboard (unsigned char key, int x, int y)
 //*************************************************************************************
 int main(int argc, char ** argv)
 {
+	//init_mano(stato_mano);
+	//mano = new Hand(stato_mano);
 
-	init_mano(stato_mano);
-	mano = new Hand(stato_mano);
+	palmo=new Palm();
 
 	//Variabile di stato per il kinect
 	XnStatus rc = XN_STATUS_OK;
@@ -740,6 +845,7 @@ int main(int argc, char ** argv)
 	createTrackbar( "X", windowName, &trackX, 360,  NULL);//OK tested
 	createTrackbar( "Y", windowName, &trackY, 360,  NULL);//OK tested
 	createTrackbar( "Z", windowName, &trackZ, 360,  NULL);//OK tested
+	createTrackbar( "rotY", windowName, &prova, 360,  NULL);//OK tested
 	resizeWindow(windowName, 640, 480);
 	setOpenGlDrawCallback(windowName, glutDisplay);
 	for( ; ; )
@@ -788,9 +894,9 @@ int main(int argc, char ** argv)
 		//=========================================
 
 		//RGB
-		//namedWindow("RGB");
+		namedWindow("RGB");
 		//addText(colorShow,"RGB Image", Point(10,20),dafont);
-		//imshow("RGB", colorShow);
+		imshow("RGB", colorShow);
 
 		//Depth
 		namedWindow("Depth");

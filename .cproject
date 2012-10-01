@@ -27,6 +27,7 @@
 								<option id="gnu.cpp.compiler.exe.debug.option.debugging.level.1572493351" name="Debug Level" superClass="gnu.cpp.compiler.exe.debug.option.debugging.level" value="gnu.cpp.compiler.debugging.level.max" valueType="enumerated"/>
 								<option id="gnu.cpp.compiler.option.include.paths.754091045" name="Include paths (-I)" superClass="gnu.cpp.compiler.option.include.paths" valueType="includePath">
 									<listOptionValue builtIn="false" value="/usr/include/openni/"/>
+									<listOptionValue builtIn="false" value="/usr/include/bullet/"/>
 									<listOptionValue builtIn="false" value="/usr/local/include/eigen3/"/>
 									<listOptionValue builtIn="false" value="/usr/include/nite/"/>
 								</option>
@@ -41,6 +42,9 @@
 							<tool id="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug.888569982" name="GCC C++ Linker" superClass="cdt.managedbuild.tool.gnu.cpp.linker.exe.debug">
 								<option id="gnu.cpp.link.option.libs.1564474979" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="opencv_calib3d"/>
+									<listOptionValue builtIn="false" value="BulletDynamics"/>
+									<listOptionValue builtIn="false" value="BulletCollision"/>
+									<listOptionValue builtIn="false" value="LinearMath"/>
 									<listOptionValue builtIn="false" value="QtOpenGL"/>
 									<listOptionValue builtIn="false" value="OpenNI"/>
 									<listOptionValue builtIn="false" value="opencv_contrib"/>
@@ -50,6 +54,7 @@
 									<listOptionValue builtIn="false" value="opencv_legacy"/>
 									<listOptionValue builtIn="false" value="opencv_ml"/>
 									<listOptionValue builtIn="false" value="opencv_core"/>
+									<listOptionValue builtIn="false" value="opencv_video"/>
 									<listOptionValue builtIn="false" value="opencv_imgproc"/>
 									<listOptionValue builtIn="false" value="opencv_highgui"/>
 									<listOptionValue builtIn="false" value="XnVNite_1_5_2"/>
