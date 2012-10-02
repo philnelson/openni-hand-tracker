@@ -12,6 +12,7 @@
 #include "PointDrawer.h"
 #include <GL/glut.h>
 #include "Palm.h"
+#include "particle.h"
 #include "signal_catch.h"
 //*************************************************************************************
 
@@ -86,12 +87,12 @@ double R[]={0.9998462882657779,0.0012635359098409581,-0.017487233004436643,
 //*************************************************************************************
 using namespace cv;
 //*************************************************************************************
+#define STDIM 	60
+#define	 GENER	30
 
-float stormo[60][6];
-float stormo_errori[60];
-float stormo_migliore[6];
-float stormo_migliore_errore;
-float stormo_migliore_personale[60][6];
+particle* stormo;
+particle best;
+bool draw=false;
 
 
 
@@ -240,38 +241,134 @@ float myrand()
 
 void pso_init()
 {
-	for(int i=0;i<60;i++)
+
+	stormo=new particle[60];
+
+	for(int i=0;i<STDIM;i++)
 	{
-		stormo[i][0]=myrand()*640;
-		stormo[i][1]=myrand()*480;
-		stormo[i][2]=0;
-		stormo[i][3]=0;
-		stormo[i][4]=0;
-		stormo[i][5]=myrand()*360-180;
+		stormo[i].posa[partX]=((int)myrand()*640);
+		stormo[i].posa[partY]=((int)myrand()*480);
+		stormo[i].posa[partrotZ]=0;
+
+		printf("Particella [%d] X: %d\t Y: %d\t Z: %d\n",i,stormo[i].posa[partX],stormo[i].posa[partY],stormo[i].posa[partrotZ]);
+
 	}
+
+
+
 }
 
 void pso_update()
 {
+	float c1=2.8;
+	float c2=1.3;
+	float r1=myrand();
+	float r2=myrand();
 
+
+	for(int i=0;i<STDIM;i++) //ogni particella dello stormo
+	{
+		for(int j=0;j<partDIM;j++) //ogni elemento dello stato
+		{
+			if(j==partX || j==partY || j==partrotZ) //solo questi tre
+			{
+				//STORMO[i]-> i-esime particella
+				//posa[j] -> j-esimo elemento
+				stormo[i].vposa[j]=stormo[i].vposa[j]+c1*r1*(best.posa[j]-stormo[i].posa[j])+c2*r2*(stormo[i].posaBest[j]-stormo[i].posa[j]);
+			}
+		}
+	}
+
+	for(int i=0;i<STDIM;i++) //vedi sopra
+	{
+		for(int j=0;j<partDIM;j++)
+		{
+			if(j==partX || j==partY || j==partrotZ)
+			{
+				stormo[i].posa[j]=stormo[i].posa[j]+stormo[i].vposa[j];
+			}
+		}
+
+	}
 }
 
+void pso_perturba_stormo()
+{
+	best.errore_posa=999;
+	float max=10;
+	float min=5;
+
+	for(int i=0;i<STDIM;i++)
+	{
+		for(int j=0;j<partDIM;j++)
+		{
+			if(j==partX || j==partY || j==partrotZ)
+			{
+				stormo[i].posa[j]=stormo[i].posa[j]+myrand()*max-min;
+			}
+		}
+	}
+}
 void pso_best()
 {
-
+	for(int i=0;i<STDIM;i++)
+	{
+		if(stormo[i].errore_posa<best.errore_posa)
+		{
+			for(int j=0;j<partDIM;j++)
+			{
+				best.posa[j]=stormo[i].posa[j];
+			}
+		}
+	}
 }
 
-void pso_compute_errore(float *particella,int *errore)
+void pso_compute_error()
 {
-	XnDepthPixel* pDepth = depthMD.WritableData();
-	int error_count=0;
-	for(int i=0;i<8;i++)
-	{
-		int index=-particella[i][1]*640+particella[i][0];
-		if(pDepth[index]==0)
-			error_count++;
+	//per computare l'errore devo compiere i seguenti passi:
+	//
+	//- settare lo stato del modello allo stato della particella
+	//- verificare, per ogni vertice del modello se è incluso nell'area della depth
+	//- incrementare l'errore per ogni vertice che non soddisfa il punto precedente
+	for(int i=0;i<STDIM;i++){
+
+		for(int j=0;j<partDIM;j++)
+		{
+			palmo->posa[j]=stormo[i].posa[j];
+		}
+
+
+		int errore=0;
+
+		palmo->Update(); //dopo l'update mi ritrovo nel vettore "puntiproiettati" le coordinate dei vertici
+		printf("Particella x: %d \t y:%d\t Palmo x: %d \ty: %d \n",stormo[i].posa[0],stormo[i].posa[0],palmo->puntiProiettati[0][0],palmo->puntiProiettati[0][1]);
+		XnDepthPixel* pDepth = depthMD.WritableData();
+		for(int i=0;i<8;i++)
+		{
+			int index=-480*palmo->puntiProiettati[i][1]+palmo->puntiProiettati[i][0];
+
+			if(index>307200)
+			{
+				int depth=pDepth[index];
+
+				if(depth==0) errore++;
+			}
+			else
+				printf("OUT OF BOUNDS \n");
+		}
+
+		stormo[i].errore_posa=errore;
+
+		if(stormo[i].errore_posa<stormo[i].errore_posaBest)
+		{
+			for(int j=0;j<partDIM;j++)
+			{
+				stormo[i].posaBest[j]=stormo[i].posa[j];
+			}
+
+		}
 	}
-	*errore=error_count;
+
 }
 
 //*************************************************************************************
@@ -612,6 +709,24 @@ void hand_found(cv::Mat depthshow,XnDepthPixel* pDepth)
 	imshow( "Processing", drawing );
 
 
+	//PSO HERE
+
+	for(int i=0;i<GENER;i++)
+	{
+		pso_update();
+		pso_compute_error();
+		pso_best();
+	}
+
+	for(int i=0;i<partDIM;i++)
+	{
+		palmo->posa[0]=best.posa[i];
+	}
+
+
+	pso_perturba_stormo();
+
+
 	//cvtColor( reprojected, reprojected, CV_RGB2GRAY );
 	//blur( reprojected, reprojected, Size(3,3) );
 	//threshold( reprojected, reprojected, thresh, 255, THRESH_BINARY );
@@ -747,6 +862,10 @@ int main(int argc, char ** argv)
 	//mano = new Hand(stato_mano);
 
 	palmo=new Palm();
+
+	printf("PSO INIT\n");
+	pso_init();
+	printf("PSO OK\n");
 
 	//Variabile di stato per il kinect
 	XnStatus rc = XN_STATUS_OK;
