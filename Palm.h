@@ -16,14 +16,15 @@
 #include <ctime>
 #include <cmath>
 
-#define PALM_DIM    6
+#define PALM_DIM		6
+#define PALM_VERTEX		8
 
-#define PALMx    	  0
-#define PALMy    	  1
-#define PALMz   	  2
-#define PALMrotx      3
-#define PALMroty      4
-#define PALMrotz      5
+#define PALMx    	  	0
+#define PALMy    	  	1
+#define PALMz   	  	2
+#define PALMrotx      	3
+#define PALMroty      	4
+#define PALMrotz      	5
 
 using namespace std;
 

@@ -13,7 +13,7 @@ Palm::Palm() {
 
 	this->fi=0;
 	this->teta=3.14/6;
-	this->raggio=100;
+	this->raggio=50;
 
 	this->pimezz=3.14/2;
 
@@ -70,15 +70,35 @@ void Palm::Draw() {
 
 void Palm::Update()
 {
-	float T[3]={posa[PALMx],posa[PALMy],posa[PALMz]};
-	btQuaternion q(posa[PALMroty],posa[PALMrotx],posa[PALMrotz]);
+	int debug=0;
+	int T[3]={posa[PALMx],posa[PALMy],posa[PALMz]};
+
+	if(debug)
+		printf("Costruisco la matrice R con i quaternioni\n");
+	if(debug)
+		printf("[%d %d %d] \n",posa[PALMroty],posa[PALMrotx],posa[PALMrotz]);
+
+
+
+	btQuaternion q((float)posa[PALMroty],(float)posa[PALMrotx],(float)posa[PALMrotz]);
 	btMatrix3x3 R(q);
+
+	if(debug)
+	{
+		printf("T[%d %d %d] \n",T[0],T[1],T[2]);
+		printf("R\n");
+		printf("[%d %d %d] \n",(int)R[0][0],(int)R[0][1],(int)R[0][2]);
+		printf("[%d %d %d] \n",(int)R[1][0],(int)R[1][1],(int)R[1][2]);
+		printf("[%d %d %d] \n",(int)R[2][0],(int)R[2][1],(int)R[2][2]);
+	}
 
 	for(int i=0;i<8;i++)
 	{
-		puntiProiettati[i][0] = (punti[i][0]*R[0][0]+punti[i][1]*R[0][1]+punti[i][2]*R[0][2]) + T[0];
-		puntiProiettati[i][1] = (punti[i][0]*R[1][0]+punti[i][1]*R[1][1]+punti[i][2]*R[1][2]) + T[1];
-		puntiProiettati[i][2] = (punti[i][0]*R[2][0]+punti[i][1]*R[2][1]+punti[i][2]*R[2][2]) + T[2];
+		this->puntiProiettati[i][0] = (punti[i][0]*R[0][0]+punti[i][1]*R[0][1]+punti[i][2]*R[0][2]) + T[0];
+		this->puntiProiettati[i][1] = (punti[i][0]*R[1][0]+punti[i][1]*R[1][1]+punti[i][2]*R[1][2]) + T[1];
+		this->puntiProiettati[i][2] = (punti[i][0]*R[2][0]+punti[i][1]*R[2][1]+punti[i][2]*R[2][2]) + T[2];
+
+		//printf("[%d][%f \t%f \t%f]\n",i,this->puntiProiettati[i][0],this->puntiProiettati[i][1],this->puntiProiettati[i][2]);
 	}
 
 }

@@ -9,14 +9,16 @@
 
 particle::particle() {
 
+	printf("Instanzio particella \n");
+
 	for(int i=0;i<partDIM;i++)
 	{
 		this->posa[i]=this->posaBest[i]=this->vposa[i]=0;
 	}
 
 
-	this->errore_posa=999;
-	this->errore_posaBest=999;
+	this->errore_posa=99999;
+	this->errore_posaBest=99999;
 
 
 

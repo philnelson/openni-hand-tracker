@@ -4,6 +4,7 @@
  *  Created on: Oct 1, 2012
  *      Author: malcom
  */
+#include <stdio.h>
 
 #ifndef PARTICLE_H_
 #define PARTICLE_H_

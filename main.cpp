@@ -87,8 +87,8 @@ double R[]={0.9998462882657779,0.0012635359098409581,-0.017487233004436643,
 //*************************************************************************************
 using namespace cv;
 //*************************************************************************************
-#define STDIM 	60
-#define	 GENER	30
+#define STDIM 	20
+#define	 GENER	600
 
 particle* stormo;
 particle best;
@@ -242,13 +242,13 @@ float myrand()
 void pso_init()
 {
 
-	stormo=new particle[60];
+	stormo=new particle[STDIM];
 
 	for(int i=0;i<STDIM;i++)
 	{
-		stormo[i].posa[partX]=((int)myrand()*640);
-		stormo[i].posa[partY]=((int)myrand()*480);
-		stormo[i].posa[partrotZ]=0;
+		stormo[i].posa[partX]=myrand()*640;
+		stormo[i].posa[partY]=myrand()*480;
+		stormo[i].posa[partrotZ]=myrand()*360;
 
 		printf("Particella [%d] X: %d\t Y: %d\t Z: %d\n",i,stormo[i].posa[partX],stormo[i].posa[partY],stormo[i].posa[partrotZ]);
 
@@ -264,17 +264,32 @@ void pso_update()
 	float c2=1.3;
 	float r1=myrand();
 	float r2=myrand();
+	float maxSpeed=5.0f;
+	float limitX=640;
+	float limitY=480;
 
 
 	for(int i=0;i<STDIM;i++) //ogni particella dello stormo
 	{
 		for(int j=0;j<partDIM;j++) //ogni elemento dello stato
 		{
-			if(j==partX || j==partY || j==partrotZ) //solo questi tre
+			if(j==partX || j==partY || j==partrotZ) //solo questi due per ora
 			{
 				//STORMO[i]-> i-esime particella
 				//posa[j] -> j-esimo elemento
-				stormo[i].vposa[j]=stormo[i].vposa[j]+c1*r1*(best.posa[j]-stormo[i].posa[j])+c2*r2*(stormo[i].posaBest[j]-stormo[i].posa[j]);
+
+				float update_stormo=c1*r1*(best.posa[j]-stormo[i].posa[j]);
+				float update_sociale=c2*r2*(stormo[i].posaBest[j]-stormo[i].posa[j]);
+				float update=update_stormo+update_sociale;
+
+				stormo[i].vposa[j]=stormo[i].vposa[j]+update;
+
+				if(abs(stormo[i].vposa[j])>maxSpeed) //controllo se la velocità imposta è maggiore della velocità massima consentita
+				{
+					stormo[i].vposa[j]=(stormo[i].vposa[j]/abs(stormo[i].vposa[j]))*maxSpeed; //recupero il segno e imposta la velocità
+				}
+
+				//printf("particella %d componente %d : %d + %d = %d \n",(int)i,(int)j,(int)old,(int)update,(int)stormo[i].vposa[j]);
 			}
 		}
 	}
@@ -283,28 +298,43 @@ void pso_update()
 	{
 		for(int j=0;j<partDIM;j++)
 		{
+
 			if(j==partX || j==partY || j==partrotZ)
 			{
 				stormo[i].posa[j]=stormo[i].posa[j]+stormo[i].vposa[j];
+
+				if(j==partX)
+				{
+					if(stormo[i].posa[j]<0)stormo[i].posa[j]=0;
+					if(stormo[i].posa[j]>640)stormo[i].posa[j]=640;
+				}
+				if(j==partY)
+				{
+					if(stormo[i].posa[j]<0)stormo[i].posa[j]=0;
+					if(stormo[i].posa[j]>480)stormo[i].posa[j]=480;
+				}
+
 			}
 		}
 
 	}
+
+
 }
 
 void pso_perturba_stormo()
 {
-	best.errore_posa=999;
-	float max=10;
-	float min=5;
+	best.errore_posa=99999;
+	float max=100;
+	float min=max/2;
 
 	for(int i=0;i<STDIM;i++)
 	{
 		for(int j=0;j<partDIM;j++)
 		{
-			if(j==partX || j==partY || j==partrotZ)
+			if(j==partX || j==partY|| j==partrotZ)
 			{
-				stormo[i].posa[j]=stormo[i].posa[j]+myrand()*max-min;
+				stormo[i].posa[j]=stormo[i].posa[j]+(int)(myrand()*max-min);
 			}
 		}
 	}
@@ -315,48 +345,64 @@ void pso_best()
 	{
 		if(stormo[i].errore_posa<best.errore_posa)
 		{
+			best.errore_posa=stormo[i].errore_posa;
 			for(int j=0;j<partDIM;j++)
 			{
 				best.posa[j]=stormo[i].posa[j];
+
 			}
 		}
 	}
+
+
 }
 
 void pso_compute_error()
 {
-	//per computare l'errore devo compiere i seguenti passi:
-	//
-	//- settare lo stato del modello allo stato della particella
-	//- verificare, per ogni vertice del modello se è incluso nell'area della depth
-	//- incrementare l'errore per ogni vertice che non soddisfa il punto precedente
+
 	for(int i=0;i<STDIM;i++){
 
 		for(int j=0;j<partDIM;j++)
 		{
 			palmo->posa[j]=stormo[i].posa[j];
+
 		}
 
 
 		int errore=0;
 
 		palmo->Update(); //dopo l'update mi ritrovo nel vettore "puntiproiettati" le coordinate dei vertici
-		printf("Particella x: %d \t y:%d\t Palmo x: %d \ty: %d \n",stormo[i].posa[0],stormo[i].posa[0],palmo->puntiProiettati[0][0],palmo->puntiProiettati[0][1]);
-		XnDepthPixel* pDepth = depthMD.WritableData();
-		for(int i=0;i<8;i++)
-		{
-			int index=-480*palmo->puntiProiettati[i][1]+palmo->puntiProiettati[i][0];
 
-			if(index>307200)
+		XnDepthPixel* pDepth = depthMD.WritableData();
+		for(int k=0;k<PALM_VERTEX;k++)
+		{
+			int index=480*(int)palmo->puntiProiettati[k][1]+(int)palmo->puntiProiettati[k][0];
+
+			if(index<307200)
 			{
 				int depth=pDepth[index];
 
-				if(depth==0) errore++;
+				if(depth==0)
+				{
+					if(k==7)errore=errore+10;
+					else
+						if(k==8)errore=errore+10;
+						else
+						{
+							errore++;
+						}
+				}
 			}
-			else
-				printf("OUT OF BOUNDS \n");
-		}
 
+		}
+		/*
+		int distance=std::sqrt(		pow((int)g_pDrawer->ptProjective.X-(int)palmo->puntiProiettati[0][0],2)+
+									pow((int)g_pDrawer->ptProjective.Y-(int)palmo->puntiProiettati[0][1],2)
+								);
+		errore=distance;
+		//printf("Punto(%d,%d) Palmo(%d,%d)\n",(int)palmo->puntiProiettati[0][0],(int)palmo->puntiProiettati[0][1],(int)g_pDrawer->ptProjective.X,(int)g_pDrawer->ptProjective.Y);
+
+		 */
 		stormo[i].errore_posa=errore;
 
 		if(stormo[i].errore_posa<stormo[i].errore_posaBest)
@@ -365,8 +411,10 @@ void pso_compute_error()
 			{
 				stormo[i].posaBest[j]=stormo[i].posa[j];
 			}
+			stormo[i].errore_posaBest=stormo[i].errore_posa;
 
 		}
+
 	}
 
 }
@@ -520,6 +568,7 @@ void hand_found(cv::Mat depthshow,XnDepthPixel* pDepth)
 			else
 			{
 				Point3_<uchar>* p = reprojected.ptr<Point3_<uchar> >(y,x);
+				*pDepth=1000;
 				p->x=pPixel->nBlue;
 				p->y=pPixel->nGreen;
 				p->z=pPixel->nRed;
@@ -713,17 +762,18 @@ void hand_found(cv::Mat depthshow,XnDepthPixel* pDepth)
 
 	for(int i=0;i<GENER;i++)
 	{
-		pso_update();
 		pso_compute_error();
 		pso_best();
+		pso_update();
 	}
 
+	pso_best();
 	for(int i=0;i<partDIM;i++)
 	{
-		palmo->posa[0]=best.posa[i];
+		palmo->posa[i]=(float)best.posa[i];
 	}
-
-
+	palmo->Update();
+	best.errore_posa=99999;
 	pso_perturba_stormo();
 
 
@@ -739,29 +789,47 @@ void glutDisplay (void*)
 {
 	glEnable(GL_DEPTH_TEST);
 	glClear (GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-	//glMatrixMode(GL_PROJECTION);
-
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glOrtho(0,640,-480,0,0,100000);
+	glOrtho(0,640,-480,0,0,500);
 
 	glPushMatrix();
+
+
 	glTranslatef(0,0,-100);
+	/*
+	glTranslatef(320,-240,0);
 	glRotatef(trackX,1,0,0);
 	glRotatef(trackY,0,1,0);
 	glRotatef(trackZ,0,0,1);
-	//mano->draw();
+	glTranslatef(-320,240,0);
+	 */
+	palmo->posa[PALMy]=-palmo->posa[PALMy];
+	palmo->Update();
 	palmo->Draw();
+
+	glBegin(GL_LINES);
+	glVertex3f(palmo->posa[PALMx],palmo->posa[PALMy],palmo->posa[PALMz]);
+	glVertex3f(g_pDrawer->ptProjective.X,-g_pDrawer->ptProjective.Y,palmo->posa[PALMz]);
+	glEnd();
+	/*
 	palmo->Update();
 	palmo->posa[PALMroty]=prova*3.14/180;
 	palmo->posa[PALMx]=320;
 	palmo->posa[PALMy]=240;
 	palmo->posa[PALMy]=-palmo->posa[PALMy];
+	 */
 
-	DrawAxes(1.0f);
 	glPopMatrix();
 
+	glPushMatrix();
+	glTranslatef(50,-430,-50);
+	glRotatef(trackX,1,0,0);
+	glRotatef(trackY,0,1,0);
+	glRotatef(trackZ,0,0,1);
+	DrawAxes(150.0f);
+
+	glPopMatrix();
 	//init_mano(stato_mano);
 	//mano->setState(stato_mano);
 
@@ -1013,9 +1081,10 @@ int main(int argc, char ** argv)
 		//=========================================
 
 		//RGB
-		namedWindow("RGB");
+
+		//namedWindow("RGB");
 		//addText(colorShow,"RGB Image", Point(10,20),dafont);
-		imshow("RGB", colorShow);
+		//imshow("RGB", colorShow);
 
 		//Depth
 		namedWindow("Depth");
