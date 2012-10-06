@@ -87,8 +87,8 @@ double R[]={0.9998462882657779,0.0012635359098409581,-0.017487233004436643,
 //*************************************************************************************
 using namespace cv;
 //*************************************************************************************
-#define STDIM 	20
-#define	 GENER	600
+#define STDIM 	200
+#define	 GENER	60
 
 particle* stormo;
 particle best;
@@ -110,13 +110,11 @@ xn::GestureGenerator g_GestureGenerator;
 xn::DepthMetaData depthMD;
 xn::ImageMetaData imageMD;
 
-//KALMAN
-KalmanFilter KF(4, 2, 0);
 
 //Mano
 //Hand* mano;
 Palm* palmo;
-//float stato_mano[HAND_DIM];
+
 
 // NITE objects
 XnVSessionManager* g_pSessionManager;
@@ -124,6 +122,9 @@ XnVFlowRouter* g_pFlowRouter;
 
 // the drawer
 XnVPointDrawer* g_pDrawer;
+
+//OPENCV GLOBALS
+Mat colorShow = Mat::zeros(480,640, CV_8UC3 );
 
 //Font utilizzato per disegnare nelle finestre
 CvFont dafont = fontQt("Times",10,Scalar(255,255,255));
@@ -328,13 +329,13 @@ void pso_perturba_stormo()
 	float max=100;
 	float min=max/2;
 
-	for(int i=0;i<STDIM;i++)
+	for(int i=1;i<STDIM;i++)
 	{
 		for(int j=0;j<partDIM;j++)
 		{
 			if(j==partX || j==partY|| j==partrotZ)
 			{
-				stormo[i].posa[j]=stormo[i].posa[j]+(int)(myrand()*max-min);
+				stormo[i].posa[j]=stormo[0].posa[j]+(int)(myrand()*max-min);
 			}
 		}
 	}
@@ -349,7 +350,7 @@ void pso_best()
 			for(int j=0;j<partDIM;j++)
 			{
 				best.posa[j]=stormo[i].posa[j];
-
+				best.punti_esterni=stormo[i].punti_esterni;
 			}
 		}
 	}
@@ -360,6 +361,8 @@ void pso_best()
 void pso_compute_error()
 {
 
+
+
 	for(int i=0;i<STDIM;i++){
 
 		for(int j=0;j<partDIM;j++)
@@ -367,7 +370,7 @@ void pso_compute_error()
 			palmo->posa[j]=stormo[i].posa[j];
 
 		}
-
+		stormo[i].punti_esterni=0;
 
 		int errore=0;
 
@@ -382,27 +385,21 @@ void pso_compute_error()
 			{
 				int depth=pDepth[index];
 
-				if(depth==0)
+				if(depth<=0)
 				{
-					if(k==7)errore=errore+10;
-					else
-						if(k==8)errore=errore+10;
-						else
-						{
-							errore++;
-						}
+					errore=errore+50;
+					stormo[i].punti_esterni++;
 				}
 			}
 
 		}
-		/*
+
 		int distance=std::sqrt(		pow((int)g_pDrawer->ptProjective.X-(int)palmo->puntiProiettati[0][0],2)+
 									pow((int)g_pDrawer->ptProjective.Y-(int)palmo->puntiProiettati[0][1],2)
 								);
-		errore=distance;
+		errore=errore+distance/3;
 		//printf("Punto(%d,%d) Palmo(%d,%d)\n",(int)palmo->puntiProiettati[0][0],(int)palmo->puntiProiettati[0][1],(int)g_pDrawer->ptProjective.X,(int)g_pDrawer->ptProjective.Y);
 
-		 */
 		stormo[i].errore_posa=errore;
 
 		if(stormo[i].errore_posa<stormo[i].errore_posaBest)
@@ -537,7 +534,7 @@ void init_mano(float *state)
 void hand_found(cv::Mat depthshow,XnDepthPixel* pDepth)
 {
 	//Nome della finestra da creare
-	namedWindow( "Processing", CV_WINDOW_AUTOSIZE );
+	namedWindow( "Processing", CV_WINDOW_AUTOSIZE|CV_WINDOW_OPENGL );
 	createTrackbar( "Angle", "Processing", &angleT, 360,  NULL);//OK tested
 	createTrackbar( "Dist min", "Processing", &distT, 200,  NULL);//OK tested
 	createTrackbar( "Dist max", "Processing", &dist2T, 200,  NULL);//OK tested
@@ -755,6 +752,15 @@ void hand_found(cv::Mat depthshow,XnDepthPixel* pDepth)
 
 	//Istanzio e mostro la finestra di in cui ho disegnato i contorni e i difetti
 	putText(drawing, "Fingertips", Point(10,20), FONT_HERSHEY_SIMPLEX, 0.5f, Scalar(255,255,255)); //perchè non è una 8bit a 3 canali
+
+	//DISEGNO I PUNTI DEI VERTICI DEL BEST PALM
+
+	for(int i=0;i<PALM_VERTEX;i++)
+	{
+		cv::Point vertex(palmo->puntiProiettati[i][0],palmo->puntiProiettati[i][1]);
+		circle(drawing, vertex, 1, Scalar( 255, 0, 255 ), 1, 8, 0);
+	}
+
 	imshow( "Processing", drawing );
 
 
@@ -767,12 +773,12 @@ void hand_found(cv::Mat depthshow,XnDepthPixel* pDepth)
 		pso_update();
 	}
 
-	pso_best();
 	for(int i=0;i<partDIM;i++)
 	{
 		palmo->posa[i]=(float)best.posa[i];
 	}
 	palmo->Update();
+	printf("X: %d\t Y: %d\t Ext: %d\t Err: %d\t\n",best.posa[0],best.posa[1],best.punti_esterni, best.errore_posa);
 	best.errore_posa=99999;
 	pso_perturba_stormo();
 
@@ -804,12 +810,22 @@ void glutDisplay (void*)
 	glRotatef(trackZ,0,0,1);
 	glTranslatef(-320,240,0);
 	 */
-	palmo->posa[PALMy]=-palmo->posa[PALMy];
-	palmo->Update();
-	palmo->Draw();
+
+	Palm prova;
+	prova.posa[0]=palmo->posa[0];
+	prova.posa[1]=-palmo->posa[1];
+	prova.posa[2]=palmo->posa[2];
+	prova.posa[3]=palmo->posa[3];
+	prova.posa[4]=palmo->posa[4];
+	prova.posa[5]=palmo->posa[5];
+	prova.Update();
+
+	//palmo->posa[PALMy]=-palmo->posa[PALMy];
+	//palmo->Update();
+	prova.Draw();
 
 	glBegin(GL_LINES);
-	glVertex3f(palmo->posa[PALMx],palmo->posa[PALMy],palmo->posa[PALMz]);
+	glVertex3f(prova.posa[PALMx],prova.posa[PALMy],prova.posa[PALMz]);
 	glVertex3f(g_pDrawer->ptProjective.X,-g_pDrawer->ptProjective.Y,palmo->posa[PALMz]);
 	glEnd();
 	/*
@@ -919,6 +935,20 @@ void glutKeyboard (unsigned char key, int x, int y)
 //*************************************************************************************
 //*************************************************************************************
 
+//CALLBACK PER IL MOUSE
+	void onMouse( int event, int x, int y, int, void* )
+	{
+	    if( event == CV_EVENT_LBUTTONDOWN )
+
+	    {
+	    printf("CLICK AT (%d, %d)\n",x,y);
+
+	    uchar blue=colorShow.ptr<uchar>(y)[3*x+0];
+	    uchar green=colorShow.ptr<uchar>(y)[3*x+1];
+	    uchar red=colorShow.ptr<uchar>(y)[3*x+2];
+	    printf("Color is: %d %d %d \n",red,green,blue);
+	    }
+	}
 
 
 //*************************************************************************************
@@ -996,6 +1026,7 @@ int main(int argc, char ** argv)
 	//Riproietto la depth image sulla rgbimage
 	g_DepthGenerator.GetAlternativeViewPointCap().SetViewPoint(g_ImageGenerator);
 
+
 	//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 	//<><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 	//								Main loop del programma
@@ -1035,9 +1066,17 @@ int main(int argc, char ** argv)
 	createTrackbar( "rotY", windowName, &prova, 360,  NULL);//OK tested
 	resizeWindow(windowName, 640, 480);
 	setOpenGlDrawCallback(windowName, glutDisplay);
+
+
+	//FINESTRA RGB, REGISTRO LA CALLBACK
+	namedWindow("RGB");
+	setMouseCallback("RGB",	onMouse,0);
+
+
 	for( ; ; )
 	{
 		updateWindow(windowName);
+
 		//Terminare il ciclo se ho premuto esc precedentemente ESC
 		if (key_pre == 27) break ;
 
@@ -1072,7 +1111,7 @@ int main(int argc, char ** argv)
 
 		//COLORED IMAGE BGR
 		//Matrice dei punti pronta per essere disegnata
-		Mat colorShow = Mat::zeros(480,640, CV_8UC3 );
+		//colorShow è global
 		RGBkinect2OpenCV(colorShow);
 
 
@@ -1082,9 +1121,9 @@ int main(int argc, char ** argv)
 
 		//RGB
 
-		//namedWindow("RGB");
+
 		//addText(colorShow,"RGB Image", Point(10,20),dafont);
-		//imshow("RGB", colorShow);
+		imshow("RGB", colorShow);
 
 		//Depth
 		namedWindow("Depth");

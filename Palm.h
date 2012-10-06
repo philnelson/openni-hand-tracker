@@ -17,7 +17,7 @@
 #include <cmath>
 
 #define PALM_DIM		6
-#define PALM_VERTEX		8
+#define PALM_VERTEX		13
 
 #define PALMx    	  	0
 #define PALMy    	  	1
@@ -36,8 +36,8 @@ public:
 	void Update();
 
 	float posa[PALM_DIM];
-	float punti[8][3];
-	float puntiProiettati[8][3];
+	float punti[PALM_VERTEX][3];
+	float puntiProiettati[PALM_VERTEX][3];
 	float teta;
 	float raggio;
 	float fi;

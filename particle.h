@@ -29,6 +29,7 @@ public:
 	int posaBest[6];
 	int vposa[6];
 
+	int punti_esterni;
 	int errore_posa;
 	int errore_posaBest;
 };

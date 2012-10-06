@@ -19,7 +19,7 @@ particle::particle() {
 
 	this->errore_posa=99999;
 	this->errore_posaBest=99999;
-
+	this->punti_esterni=0;
 
 
 }

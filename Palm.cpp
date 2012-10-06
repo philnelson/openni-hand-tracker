@@ -12,8 +12,8 @@
 Palm::Palm() {
 
 	this->fi=0;
-	this->teta=3.14/6;
-	this->raggio=50;
+	this->teta=3.14/4;
+	this->raggio=30;
 
 	this->pimezz=3.14/2;
 
@@ -25,20 +25,29 @@ Palm::Palm() {
 	//PUNTO 1
 	punti[0][0]=punti[0][1]=punti[0][2]=0;
 	//PUNTO 2
-	int n=1;
-	for(n=1;n<6;n++)
-	{
-		punti[n][0]=punti[0][0]+raggio*sin(pimezz-n*teta)*cos(fi);
-		punti[n][1]=punti[0][1]+raggio*cos(pimezz-n*teta);
-		punti[n][2]=punti[0][2]+raggio*sin(pimezz-n*teta)*sin(fi);
-	}
-	punti[6][0]=punti[4][0];
-	punti[6][1]=-punti[4][1];
-	punti[6][2]=punti[4][2];
+	int a=1;
+	int n;
 
-	punti[7][0]=-punti[6][0];
-	punti[7][1]=punti[6][1];
-	punti[7][2]=punti[6][2];
+
+
+	for(n=1;n<13;n=n+3,a++)
+	{
+		punti[n][0]=punti[0][0]+raggio*sin(pimezz-a*teta)*cos(fi);
+		punti[n][1]=punti[0][1]+raggio*cos(pimezz-a*teta);
+		punti[n][2]=punti[0][2]+raggio*sin(pimezz-a*teta)*sin(fi);
+
+		punti[n+1][0]=punti[0][0]+raggio*2*sin(pimezz-a*teta)*cos(fi);
+		punti[n+1][1]=punti[0][1]+raggio*2*cos(pimezz-a*teta);
+		punti[n+1][2]=punti[0][2]+raggio*2*sin(pimezz-a*teta)*sin(fi);
+
+		punti[n+2][0]=punti[0][0]+raggio*3*sin(pimezz-a*teta)*cos(fi);
+		punti[n+2][1]=punti[0][1]+raggio*3*cos(pimezz-a*teta);
+		punti[n+2][2]=punti[0][2]+raggio*3*sin(pimezz-a*teta)*sin(fi);
+
+	}
+
+
+
 
 	for(int i=0;i<8;i++)
 	{
@@ -62,7 +71,7 @@ void Palm::Draw() {
 	glColor3f(1.0f,0,0);
 	glVertex3f(puntiProiettati[0][0],puntiProiettati[0][1],puntiProiettati[0][2]);
 	glColor3f(0.0f,1.00,0);
-	for(int i=1;i<8;i++)
+	for(int i=1;i<PALM_VERTEX;i++)
 		glVertex3f(puntiProiettati[i][0],puntiProiettati[i][1],puntiProiettati[i][2]);
 	glEnd();
 
@@ -92,7 +101,7 @@ void Palm::Update()
 		printf("[%d %d %d] \n",(int)R[2][0],(int)R[2][1],(int)R[2][2]);
 	}
 
-	for(int i=0;i<8;i++)
+	for(int i=0;i<PALM_VERTEX;i++)
 	{
 		this->puntiProiettati[i][0] = (punti[i][0]*R[0][0]+punti[i][1]*R[0][1]+punti[i][2]*R[0][2]) + T[0];
 		this->puntiProiettati[i][1] = (punti[i][0]*R[1][0]+punti[i][1]*R[1][1]+punti[i][2]*R[1][2]) + T[1];
