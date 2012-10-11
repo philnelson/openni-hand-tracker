@@ -125,6 +125,7 @@ XnVPointDrawer* g_pDrawer;
 
 //OPENCV GLOBALS
 Mat colorShow = Mat::zeros(480,640, CV_8UC3 );
+Mat hsvShow = Mat::zeros(480,640, CV_8UC3 );
 
 //Font utilizzato per disegnare nelle finestre
 CvFont dafont = fontQt("Times",10,Scalar(255,255,255));
@@ -395,8 +396,8 @@ void pso_compute_error()
 		}
 
 		int distance=std::sqrt(		pow((int)g_pDrawer->ptProjective.X-(int)palmo->puntiProiettati[0][0],2)+
-									pow((int)g_pDrawer->ptProjective.Y-(int)palmo->puntiProiettati[0][1],2)
-								);
+				pow((int)g_pDrawer->ptProjective.Y-(int)palmo->puntiProiettati[0][1],2)
+		);
 		errore=errore+distance/3;
 		//printf("Punto(%d,%d) Palmo(%d,%d)\n",(int)palmo->puntiProiettati[0][0],(int)palmo->puntiProiettati[0][1],(int)g_pDrawer->ptProjective.X,(int)g_pDrawer->ptProjective.Y);
 
@@ -936,19 +937,43 @@ void glutKeyboard (unsigned char key, int x, int y)
 //*************************************************************************************
 
 //CALLBACK PER IL MOUSE
-	void onMouse( int event, int x, int y, int, void* )
+void onMouse( int event, int x, int y, int, void* )
+{
+	if( event == CV_EVENT_LBUTTONDOWN )
+
 	{
-	    if( event == CV_EVENT_LBUTTONDOWN )
+		printf("CLICK AT (%d, %d)\n",x,y);
+		int blue=0;//olorShow.ptr<uchar>(y)[3*x+0];
+		int green=0;//colorShow.ptr<uchar>(y)[3*x+1];
+		int red=0;//colorShow.ptr<uchar>(y)[3*x+2];
 
-	    {
-	    printf("CLICK AT (%d, %d)\n",x,y);
+		int averagingfactor=0;
 
-	    uchar blue=colorShow.ptr<uchar>(y)[3*x+0];
-	    uchar green=colorShow.ptr<uchar>(y)[3*x+1];
-	    uchar red=colorShow.ptr<uchar>(y)[3*x+2];
-	    printf("Color is: %d %d %d \n",red,green,blue);
-	    }
+		for(int yy=y-1;yy<=y+1;yy++)
+		{
+			for(int xx=x-1;xx<=x+2;xx++)
+			{
+				blue=blue+(int)colorShow.ptr<uchar>(yy)[3*xx+0];
+				green=green+(int)colorShow.ptr<uchar>(yy)[3*xx+1];
+				red=red+(int)colorShow.ptr<uchar>(yy)[3*xx+2];
+				averagingfactor++;
+			}
+		}
+
+		blue=blue/averagingfactor;
+		green=green/averagingfactor;
+		red=red/averagingfactor;
+
+		printf("Averaging is: %d %d %d \n",red,green,blue);
+
+
+		rectangle(colorShow,Point(x-4,y-4),Point(x+4,y+4),Scalar(0,0,255),-1);
+
 	}
+
+
+
+}
 
 
 //*************************************************************************************
@@ -1112,6 +1137,12 @@ int main(int argc, char ** argv)
 		//COLORED IMAGE BGR
 		//Matrice dei punti pronta per essere disegnata
 		//colorShow è global
+
+		cvtColor(colorShow, hsvShow, CV_BGR2HSV);
+		inRange(hsvShow,Scalar(15, 100,100),Scalar(35, 255, 255), hsvShow);
+
+		imshow("RGB", colorShow);
+		imshow("HSV", hsvShow);
 		RGBkinect2OpenCV(colorShow);
 
 
@@ -1123,7 +1154,7 @@ int main(int argc, char ** argv)
 
 
 		//addText(colorShow,"RGB Image", Point(10,20),dafont);
-		imshow("RGB", colorShow);
+
 
 		//Depth
 		namedWindow("Depth");
