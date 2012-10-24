@@ -138,6 +138,16 @@ int angleT=90;
 int distT=40;
 int dist2T=70;
 
+
+int hmin=118;
+int hmax=122;
+int smin=100;
+int smax=255;
+int vmin=100;
+int vmax=255;
+int erosion_elem = 0;
+int erosion_size = 0;
+
 #define GL_WIN_SIZE_X 720
 #define GL_WIN_SIZE_Y 480
 
@@ -534,12 +544,76 @@ void init_mano(float *state)
 
 void hand_found(cv::Mat depthshow,XnDepthPixel* pDepth)
 {
+
+	cvtColor(colorShow, hsvShow, CV_BGR2HSV);
+
+
+	createTrackbar( "H min", "HSV", &hmin, 255,  NULL);//OK tested
+	createTrackbar( "H max", "HSV", &hmax, 255,  NULL);//OK tested
+	createTrackbar( "S min", "HSV", &smin, 255,  NULL);//OK tested
+	createTrackbar( "S max", "HSV", &smax, 255,  NULL);//OK tested
+	createTrackbar( "V min", "HSV", &vmin, 255,  NULL);//OK tested
+	createTrackbar( "V max", "HSV", &vmax, 255,  NULL);//OK tested
+	createTrackbar( "Erosion Elem", "HSV", &erosion_elem, 2,  NULL);//OK tested
+	createTrackbar( "Erosion Size", "HSV", &erosion_size, 10,  NULL);//OK tested
+
+	Mat hsvBLUE = Mat::zeros(480,640, CV_8UC3 );
+	Mat hsvRED = Mat::zeros(480,640, CV_8UC3 );
+
+	inRange(hsvShow,Scalar(hmin, smin,vmin),Scalar(hmax, smax, vmax), hsvBLUE);
+	inRange(hsvShow,Scalar(65, smin,vmin),Scalar(72, smax, vmax), hsvRED);
+
+	//************************************************************************************
+	//EROSIONE
+	//************************************************************************************
+	int erosion_type;
+	if( erosion_elem == 0 ){ erosion_type = MORPH_RECT; }
+	else if( erosion_elem == 1 ){ erosion_type = MORPH_CROSS; }
+	else if( erosion_elem == 2) { erosion_type = MORPH_ELLIPSE; }
+
+
+	Mat element = getStructuringElement( erosion_type,
+			Size( 2*erosion_size + 1, 2*erosion_size+1 ),
+			Point( erosion_size, erosion_size ) );
+
+	erode( hsvBLUE, hsvBLUE, element );
+	erode( hsvRED, hsvRED, element );
+	//************************************************************************************
+
+	SimpleBlobDetector::Params parametri;
+	parametri.filterByArea=1;
+	parametri.minArea=2;
+	parametri.maxArea=32500;
+	parametri.filterByColor=1;
+
+
+	SimpleBlobDetector * blob_detector;
+	blob_detector = new SimpleBlobDetector(parametri);
+	blob_detector->create("SimpleBlobDetector");
+
+	vector<KeyPoint> keypoints;
+	blob_detector->detect(hsvBLUE, keypoints);
+	if(keypoints.size()>0)
+		cv::circle(colorShow, keypoints[0].pt, 5, Scalar(255,255,255), 5, 8, 0);
+
+	blob_detector->detect(hsvRED, keypoints);
+
+	if(keypoints.size()>0)
+		cv::circle(colorShow, keypoints[0].pt, 5, Scalar(50,255,100), 5, 8, 0);
+
+
+
+
+
+	imshow("HSV",hsvRED);
+
 	//Nome della finestra da creare
 	namedWindow( "Processing", CV_WINDOW_AUTOSIZE|CV_WINDOW_OPENGL );
-	createTrackbar( "Angle", "Processing", &angleT, 360,  NULL);//OK tested
-	createTrackbar( "Dist min", "Processing", &distT, 200,  NULL);//OK tested
-	createTrackbar( "Dist max", "Processing", &dist2T, 200,  NULL);//OK tested
+	//createTrackbar( "Angle", "Processing", &angleT, 360,  NULL);//OK tested
+	//createTrackbar( "Dist min", "Processing", &distT, 200,  NULL);//OK tested
+	//createTrackbar( "Dist max", "Processing", &dist2T, 200,  NULL);//OK tested
 	//namedWindow( "Repro", CV_WINDOW_AUTOSIZE );
+
 	//Matrice dei punti di depth riproiettati
 	cv::Mat reprojected=cv::Mat::zeros(480,640,CV_8UC3);
 
@@ -650,8 +724,15 @@ void hand_found(cv::Mat depthshow,XnDepthPixel* pDepth)
 	cv::Point handPos(g_pDrawer->ptProjective.X, g_pDrawer->ptProjective.Y);
 	//Disegno il cerchio nel punto in cui ho individuato la mano
 	cv::circle(depthshow, handPos, 5, cv::Scalar(0xffff), 5, 8, 0);
+	cv::circle(colorShow, handPos, 5, cv::Scalar(0xffff), 5, 8, 0);
 
 
+
+
+
+
+
+	/*
 	Mat src_gray;
 	//Fattore di soglia
 	int thresh = 10;
@@ -659,6 +740,7 @@ void hand_found(cv::Mat depthshow,XnDepthPixel* pDepth)
 	RNG rng(12345);
 	//Effettuo una sfocatura dell'immagine di depth per diminuire il rumore
 	blur( depthshow, src_gray, Size(6,6) );
+
 	//Destinazione dell'operatore di soglia
 	Mat threshold_output;
 	//Contorni
@@ -752,7 +834,7 @@ void hand_found(cv::Mat depthshow,XnDepthPixel* pDepth)
 	}
 
 	//Istanzio e mostro la finestra di in cui ho disegnato i contorni e i difetti
-	putText(drawing, "Fingertips", Point(10,20), FONT_HERSHEY_SIMPLEX, 0.5f, Scalar(255,255,255)); //perchè non è una 8bit a 3 canali
+	//putText(drawing, "Fingertips", Point(10,20), FONT_HERSHEY_SIMPLEX, 0.5f, Scalar(255,255,255)); //perchè non è una 8bit a 3 canali
 
 	//DISEGNO I PUNTI DEI VERTICI DEL BEST PALM
 
@@ -763,10 +845,10 @@ void hand_found(cv::Mat depthshow,XnDepthPixel* pDepth)
 	}
 
 	imshow( "Processing", drawing );
-
+	 */
 
 	//PSO HERE
-
+	/*
 	for(int i=0;i<GENER;i++)
 	{
 		pso_compute_error();
@@ -782,7 +864,7 @@ void hand_found(cv::Mat depthshow,XnDepthPixel* pDepth)
 	printf("X: %d\t Y: %d\t Ext: %d\t Err: %d\t\n",best.posa[0],best.posa[1],best.punti_esterni, best.errore_posa);
 	best.errore_posa=99999;
 	pso_perturba_stormo();
-
+	 */
 
 	//cvtColor( reprojected, reprojected, CV_RGB2GRAY );
 	//blur( reprojected, reprojected, Size(3,3) );
@@ -1084,6 +1166,7 @@ int main(int argc, char ** argv)
 
 	const string windowName = "OpenGL Sample";
 
+	/*
 	namedWindow(windowName,CV_WINDOW_OPENGL | CV_WINDOW_AUTOSIZE);
 	createTrackbar( "X", windowName, &trackX, 360,  NULL);//OK tested
 	createTrackbar( "Y", windowName, &trackY, 360,  NULL);//OK tested
@@ -1091,7 +1174,7 @@ int main(int argc, char ** argv)
 	createTrackbar( "rotY", windowName, &prova, 360,  NULL);//OK tested
 	resizeWindow(windowName, 640, 480);
 	setOpenGlDrawCallback(windowName, glutDisplay);
-
+	 */
 
 	//FINESTRA RGB, REGISTRO LA CALLBACK
 	namedWindow("RGB");
@@ -1138,11 +1221,10 @@ int main(int argc, char ** argv)
 		//Matrice dei punti pronta per essere disegnata
 		//colorShow è global
 
-		cvtColor(colorShow, hsvShow, CV_BGR2HSV);
-		inRange(hsvShow,Scalar(15, 100,100),Scalar(35, 255, 255), hsvShow);
+
 
 		imshow("RGB", colorShow);
-		imshow("HSV", hsvShow);
+
 		RGBkinect2OpenCV(colorShow);
 
 
@@ -1157,9 +1239,10 @@ int main(int argc, char ** argv)
 
 
 		//Depth
-		namedWindow("Depth");
+		//namedWindow("Depth");
+
 		//putText(depthshow, "Depth Image", Point(10,20), FONT_HERSHEY_SIMPLEX, 0.5f, Scalar(255,255,255)); //perchè non è una 8bit a 3 canali, non è saggio mostrare questa label
-		imshow("Depth", depthshow);
+		//imshow("Depth", depthshow);
 
 		//Mat fake=cv::Mat::zeros(480,640,CV_8UC3);
 
